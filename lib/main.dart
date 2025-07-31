@@ -1,54 +1,106 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:kronk/firebase_options.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:kronk/constants/my_theme.dart';
+import 'package:kronk/riverpod/general/navbar_provider.dart';
+import 'package:kronk/riverpod/general/theme_provider.dart';
+import 'package:kronk/utility/dimensions.dart';
+import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/utility/my_logger.dart';
+import 'package:kronk/utility/router.dart';
+import 'package:kronk/utility/setup.dart';
+import 'package:kronk/widgets/navbar.dart';
 
-const counterBox = 'counter';
+final googleSignIn = GoogleSignIn.instance;
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  final box = await Hive.openBox(counterBox);
-  if (box.isEmpty) {
-    await box.add(0);
-  }
+  String initialLocation = await setup();
 
-  FirebaseApp app = await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    debugPrint('Initialized default app $app');
+  assert(() {
+    debugInvertOversizedImages = true;
+    return true;
+  }());
 
-  runApp(const MaterialApp(home: HiveCounterApp()));
+  myLogger.w('initialLocation: $initialLocation');
+  final GoRouter router = AppRouter(initialLocation: initialLocation).router;
+
+  runApp(ProviderScope(child: MyApp(router: router)));
 }
 
-class HiveCounterApp extends StatelessWidget {
-  const HiveCounterApp({super.key});
+class MyApp extends ConsumerStatefulWidget {
+  final GoRouter router;
+
+  const MyApp({super.key, required this.router});
+
+  @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  // Future<void>? _initialization;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.router.routerDelegate.addListener(() => _listenRouterChanges(fullPath: widget.router.routerDelegate.currentConfiguration.fullPath));
+    // _ensureInitialized();
+  }
+
+  @override
+  void dispose() {
+    widget.router.routerDelegate.removeListener(() => _listenRouterChanges(fullPath: widget.router.routerDelegate.currentConfiguration.fullPath));
+    super.dispose();
+  }
+
+  void _listenRouterChanges({required String fullPath}) {
+    final navbarItems = ref.read(navbarProvider);
+    final enabledRoutes = navbarItems.where((e) => e.isEnabled).toList();
+    final enabledRoutesString = enabledRoutes.map((e) => e.route).toList();
+
+    final index = enabledRoutesString.indexWhere((route) => fullPath.startsWith(route));
+    if (index != -1) {
+      ref.read(selectedIndexProvider.notifier).state = index;
+    }
+  }
+
+  // Future<void> _ensureInitialized() {
+  //   return _initialization ??= GoogleSignInPlatform.instance.init(const InitParameters())
+  //     ..catchError((dynamic _) {
+  //       _initialization = null;
+  //     });
+  // }
 
   @override
   Widget build(BuildContext context) {
-    final box = Hive.box(counterBox);
+    final MyTheme theme = ref.watch(themeNotifierProvider);
+    Sizes.init(context);
+    return MaterialApp.router(
+      title: 'Kronk',
+      debugShowCheckedModeBanner: false,
+      routerDelegate: widget.router.routerDelegate,
+      routeInformationParser: widget.router.routeInformationParser,
+      routeInformationProvider: widget.router.routeInformationProvider,
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Hive CE Example')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            ValueListenableBuilder(
-              valueListenable: box.listenable(),
-              builder: (context, box, widget) {
-                return Text(
-                  box.getAt(0).toString(),
-                  style: Theme.of(context).textTheme.headlineMedium,
-                );
-              },
-            ),
-          ],
+      theme: ThemeData(
+        splashFactory: NoSplash.splashFactory,
+        scaffoldBackgroundColor: theme.primaryBackground,
+        appBarTheme: AppBarTheme(
+          backgroundColor: theme.primaryBackground,
+          surfaceTintColor: theme.primaryBackground,
+          centerTitle: true,
+          titleSpacing: 0,
+          scrolledUnderElevation: 0,
+          elevation: 0,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => box.putAt(0, box.getAt(0) + 1),
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: theme.secondaryBackground,
+          foregroundColor: theme.primaryText,
+          shape: const CircleBorder(),
+          iconSize: 36.dp,
+        ),
+        iconTheme: IconThemeData(color: theme.primaryText, size: 16.dp),
+        scrollbarTheme: ScrollbarThemeData(radius: Radius.circular(2.dp), thickness: WidgetStatePropertyAll(4.dp), thumbColor: WidgetStatePropertyAll(theme.secondaryText)),
       ),
     );
   }
