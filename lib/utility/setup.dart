@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -11,7 +12,7 @@ import 'package:kronk/models/user_model.dart';
 import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
-import 'package:path_provider/path_provider.dart';
+// import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -28,14 +29,12 @@ Future<String> setup() async {
     }
   }
 
-
-
-  try {
-    await getApplicationDocumentsDirectory();
-  } catch (e, stack) {
-    myLogger.w('Exception while getting application directory, e: ${e.toString()}, stack: ${stack.toString()}');
-    rethrow;
-  }
+  // try {
+  //   await getApplicationDocumentsDirectory();
+  // } catch (e, stack) {
+  //   myLogger.w('Exception while getting application directory, e: ${e.toString()}, stack: ${stack.toString()}');
+  //   rethrow;
+  // }
 
   try {
     await Hive.initFlutter();
@@ -59,18 +58,18 @@ Future<String> setup() async {
   }
 
   try {
-  //   if (kIsWeb) {
-  //   await googleSignIn.initialize(clientId: constants.clientId, serverClientId: constants.serverClientId);
-  // } else {
-  //   await googleSignIn.initialize(serverClientId: constants.serverClientId);
-  // }
-  await googleSignIn.initialize(clientId: constants.clientId, serverClientId: constants.serverClientId);
+    if (kIsWeb) {
+      await googleSignIn.initialize(clientId: constants.clientId, serverClientId: constants.serverClientId);
+    } else {
+      await googleSignIn.initialize(serverClientId: constants.serverClientId);
+    }
+    // await googleSignIn.initialize(clientId: constants.clientId, serverClientId: constants.serverClientId);
   } catch (e, stack) {
     myLogger.w('Exception while initializing googleSignIn, e: ${e.toString()}, stack: ${stack.toString()}');
     rethrow;
   }
 
-    FlutterNativeSplash.remove();
+  FlutterNativeSplash.remove();
 
   final Storage storage = Storage();
   await storage.initializeNavbar();

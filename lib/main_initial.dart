@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kronk/firebase_options.dart';
 
@@ -16,7 +17,7 @@ void main() async {
   FirebaseApp app = await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     debugPrint('Initialized default app $app');
 
-  runApp(const MaterialApp(home: HiveCounterApp()));
+  runApp(const ProviderScope(child: MaterialApp(home: HiveCounterApp())));
 }
 
 class HiveCounterApp extends StatelessWidget {
