@@ -150,7 +150,7 @@ class AppearanceSectionWidget extends ConsumerWidget {
     return SliverToBoxAdapter(
       child: SizedBox(
         width: Sizes.screenWidth - 32.dp,
-        height: 104.dp,
+        height: 105.dp,
         child: ShaderMask(
           shaderCallback: (Rect bounds) {
             return const LinearGradient(
@@ -170,7 +170,7 @@ class AppearanceSectionWidget extends ConsumerWidget {
                 onTap: () async => await themeNotifier.changeTheme(theme: allThemes.elementAt(index)),
                 child: Container(
                   padding: EdgeInsets.symmetric(vertical: 8.dp, horizontal: 12.dp),
-                  decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(12.dp)),
                   child: Column(
                     spacing: 8.dp,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
