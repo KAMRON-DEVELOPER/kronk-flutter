@@ -28,7 +28,7 @@ class EditProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
 
     final UserModel? user = ref.watch(sharedUser);
     if (user == null) return const SizedBox.shrink();
@@ -90,7 +90,7 @@ class EditProfileImages extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final updateData = ref.watch(updateDataNotifierProvider);
     final ImageCropperState imageCropperState = ref.watch(imageCropperNotifierProvider);
 
@@ -360,7 +360,7 @@ class FieldLabel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -406,7 +406,7 @@ class _EditProfileFieldState extends ConsumerState<EditProfileField> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Column(
       children: [
         FieldLabel(label: widget.hintText),

@@ -14,7 +14,7 @@ class StatsBarChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
 
     final maxValue = stats.values.isNotEmpty ? stats.values.reduce(max).toDouble() : 10.0;
     final maxY = _calculateNiceMaxY(maxValue);

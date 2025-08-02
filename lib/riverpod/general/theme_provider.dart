@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kronk/utility/storage.dart';
 import 'package:kronk/constants/my_theme.dart';
+import 'package:kronk/utility/storage.dart';
 
-final themeNotifierProvider = NotifierProvider<ThemeNotifier, MyTheme>(ThemeNotifier.new);
+final themeProvider = AutoDisposeNotifierProvider<ThemeNotifier, MyTheme>(ThemeNotifier.new);
 
-class ThemeNotifier extends Notifier<MyTheme> {
+class ThemeNotifier extends AutoDisposeNotifier<MyTheme> {
   final Storage _storage = Storage();
 
   @override

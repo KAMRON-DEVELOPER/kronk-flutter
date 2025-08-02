@@ -19,7 +19,7 @@ class MainAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return CustomAppBar(
       appBarHeight: 48.dp,
       bottomHeight: 40.dp,

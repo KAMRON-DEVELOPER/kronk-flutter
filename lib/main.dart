@@ -38,13 +38,10 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
-  // Future<void>? _initialization;
-
   @override
   void initState() {
     super.initState();
     widget.router.routerDelegate.addListener(() => _listenRouterChanges(fullPath: widget.router.routerDelegate.currentConfiguration.fullPath));
-    // _ensureInitialized();
   }
 
   @override
@@ -64,16 +61,9 @@ class _MyAppState extends ConsumerState<MyApp> {
     }
   }
 
-  // Future<void> _ensureInitialized() {
-  //   return _initialization ??= GoogleSignInPlatform.instance.init(const InitParameters())
-  //     ..catchError((dynamic _) {
-  //       _initialization = null;
-  //     });
-  // }
-
   @override
   Widget build(BuildContext context) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     Sizes.init(context);
     return MaterialApp.router(
       title: 'Kronk',

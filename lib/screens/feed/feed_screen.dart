@@ -23,9 +23,9 @@ class FeedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(sharedFeed);
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -133,9 +133,9 @@ class CommentListWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     myLogger.i('CommentListWidget is building...');
 

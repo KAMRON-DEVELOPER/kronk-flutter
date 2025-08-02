@@ -15,7 +15,7 @@ class CustomDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Drawer(
       width: 280.dp,
       backgroundColor: theme.secondaryBackground,
@@ -90,7 +90,7 @@ class ProfileDrawerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final AsyncValue<UserModel?> asyncUser = ref.watch(profileNotifierProvider((null)));
 
     final double avatarHeight = 96.dp;
@@ -173,7 +173,7 @@ class OptionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return GestureDetector(
       onTap: () => context.push('/settings'),
       child: Row(

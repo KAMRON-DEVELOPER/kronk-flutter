@@ -15,7 +15,7 @@ class TodosScreen extends ConsumerStatefulWidget {
 class _NotesScreenState extends ConsumerState<TodosScreen> {
   @override
   Widget build(BuildContext context) {
-    final MyTheme currentTheme = ref.watch(themeNotifierProvider);
+    final MyTheme currentTheme = ref.watch(themeProvider);
 
     return Scaffold(
       backgroundColor: currentTheme.primaryBackground,

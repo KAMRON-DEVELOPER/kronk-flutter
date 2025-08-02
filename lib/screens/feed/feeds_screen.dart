@@ -28,9 +28,9 @@ class FeedsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     return DefaultTabController(
       length: 2,
@@ -147,7 +147,7 @@ class _TimelineTabState extends ConsumerState<TimelineTab> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final AsyncValue<List<FeedModel>> feeds = ref.watch(timelineNotifierProvider(widget.timelineType));
 
     ref.listen(feedNotificationNotifierProvider, (previous, next) {
@@ -226,9 +226,9 @@ class FeedListWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     return Scrollbar(
       controller: controller,
@@ -307,9 +307,9 @@ void showFeedScreenSettingsDialog(BuildContext context) {
     builder: (context) {
       return Consumer(
         builder: (context, ref, child) {
-          final theme = ref.watch(themeNotifierProvider);
+          final theme = ref.watch(themeProvider);
           final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-          final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+          final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
           final double width = 96.dp;
           final double height = 16 / 9 * width;
@@ -363,7 +363,7 @@ void showFeedScreenSettingsDialog(BuildContext context) {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(screenStyle: ScreenStyle.edgeToEdge),
+                          onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(screenStyle: LayoutStyle.edgeToEdge),
                           child: Container(
                             height: 64.dp,
                             decoration: BoxDecoration(
@@ -382,7 +382,7 @@ void showFeedScreenSettingsDialog(BuildContext context) {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(screenStyle: ScreenStyle.floating),
+                          onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(screenStyle: LayoutStyle.floating),
                           child: Container(
                             height: 64.dp,
                             decoration: BoxDecoration(

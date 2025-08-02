@@ -11,7 +11,7 @@ class VideoOverlayWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final overlayState = ref.watch(videoOverlayStateProvider(feedId));
-    final activeTheme = ref.watch(themeNotifierProvider);
+    final activeTheme = ref.watch(themeProvider);
     final iconColor = activeTheme.primaryText.withValues(alpha: 0.75);
 
     return Stack(
@@ -70,7 +70,7 @@ class _CenterIconAnimationState extends ConsumerState<CenterIconAnimation> with 
 
   @override
   Widget build(BuildContext context) {
-    final activeTheme = ref.watch(themeNotifierProvider);
+    final activeTheme = ref.watch(themeProvider);
     final iconColor = activeTheme.secondaryText;
     final overlayState = ref.watch(videoOverlayStateProvider(widget.feedId));
     return ScaleTransition(

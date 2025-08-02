@@ -49,7 +49,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final notifier = ref.watch(chatStateProvider(initialChat).notifier);
 
     final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -129,7 +129,7 @@ class _ChatMessagesWidgetState extends ConsumerState<ChatMessagesWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final AsyncValue<List<ChatMessageModel>> messages = ref.watch(chatMessagesProvider(widget.chatId));
     return messages.when(
       data: (List<ChatMessageModel> messages) {
@@ -178,7 +178,7 @@ class MessageBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
     final isSentByUser = message.senderId == userId;
 
@@ -235,7 +235,7 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final String inputMessage = ref.watch(inputMessageProvider);
     return SafeArea(
       top: false,
@@ -315,7 +315,7 @@ class ChatAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return SafeArea(
       child: Container(
         height: 56.dp,

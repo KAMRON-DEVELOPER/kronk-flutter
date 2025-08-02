@@ -49,7 +49,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final AsyncValue<bool> isOnline = ref.watch(connectivityNotifierProvider);
 
     isOnline.when(

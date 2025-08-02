@@ -39,7 +39,6 @@ class ChatService {
   Future<List<ChatModel>> getChats({int start = 0, int end = 20}) async {
     try {
       Response response = await _dio.get('');
-      myLogger.i('🚀 response.data in getChats: ${response.data}  statusCode: ${response.statusCode}');
       final data = response.data['chats'] as List;
       return data.map((json) => ChatModel.fromJson(json)).toList();
     } catch (error) {

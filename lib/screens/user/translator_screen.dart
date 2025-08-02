@@ -11,7 +11,7 @@ class TranslatorScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Scaffold(
       appBar: CustomAppBar(
         appBarHeight: 48,

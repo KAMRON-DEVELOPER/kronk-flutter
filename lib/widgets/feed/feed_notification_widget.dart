@@ -16,7 +16,7 @@ class FeedNotificationWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationState = ref.watch(feedNotificationNotifierProvider);
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
 
     return notificationState.when(
       loading: () => const SizedBox.shrink(),

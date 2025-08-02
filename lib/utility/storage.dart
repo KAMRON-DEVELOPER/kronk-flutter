@@ -19,20 +19,21 @@ class Storage {
   Storage() : navbarBox = Hive.box<NavbarModel>('navbarBox'), userBox = Hive.box<UserModel>('userBox'), settingsBox = Hive.box('settingsBox');
 
   Future<void> initializeNavbar({bool force = false}) async {
+    // route, isComingSoon, isPlanned
     final List<Tuple3<String, bool, bool>> services = [
       const Tuple3<String, bool, bool>('/feeds', false, false),
       const Tuple3<String, bool, bool>('/search', false, false),
-      const Tuple3<String, bool, bool>('/chats', true, false),
+      const Tuple3<String, bool, bool>('/chats', false, false),
       const Tuple3<String, bool, bool>('/education', false, true),
-      const Tuple3<String, bool, bool>('/notes', true, false),
+      const Tuple3<String, bool, bool>('/notes', false, false),
       const Tuple3<String, bool, bool>('/todos', false, true),
       const Tuple3<String, bool, bool>('/video_player', false, true),
       const Tuple3<String, bool, bool>('/music_player', false, true),
       const Tuple3<String, bool, bool>('/cloud_storage', false, true),
-      const Tuple3<String, bool, bool>('/vocabulary', true, false),
-      const Tuple3<String, bool, bool>('/translator', true, false),
-      const Tuple3<String, bool, bool>('/jobs', false, true),
-      const Tuple3<String, bool, bool>('/marketplace', false, true),
+      const Tuple3<String, bool, bool>('/vocabulary', false, false),
+      const Tuple3<String, bool, bool>('/translator', false, true),
+      const Tuple3<String, bool, bool>('/jobs', false, false),
+      const Tuple3<String, bool, bool>('/shop', false, true),
       const Tuple3<String, bool, bool>('/profile', false, false),
     ];
     final List<NavbarModel> defaultServices = services
@@ -161,13 +162,13 @@ class Storage {
   Future<void> deleteAsyncSettingsAll({required List<String> keys}) async => await settingsBox.deleteAll(keys);
 
   FeedScreenDisplayState getFeedScreenDisplayStyle() {
-    final String feedScreenDisplayStyleName = settingsBox.get('feedScreenDisplayStyle', defaultValue: ScreenStyle.floating.name);
+    final String feedScreenDisplayStyleName = settingsBox.get('feedScreenDisplayStyle', defaultValue: LayoutStyle.floating.name);
     final String feedScreenBackgroundImagePath = settingsBox.get('feedScreenBackgroundImagePath', defaultValue: 'assets/images/13.jpeg');
     final double feedScreenCardOpacity = settingsBox.get('feedScreenCardOpacity', defaultValue: 1.0);
     final double feedScreenCardBorderRadius = settingsBox.get('feedScreenCardBorderRadius', defaultValue: 12.0);
 
     return FeedScreenDisplayState(
-      screenStyle: ScreenStyle.values.firstWhere((style) => style.name == feedScreenDisplayStyleName, orElse: () => ScreenStyle.floating),
+      screenStyle: LayoutStyle.values.firstWhere((style) => style.name == feedScreenDisplayStyleName, orElse: () => LayoutStyle.floating),
       backgroundImagePath: feedScreenBackgroundImagePath,
       cardOpacity: feedScreenCardOpacity,
       cardBorderRadius: feedScreenCardBorderRadius,
@@ -186,13 +187,13 @@ class Storage {
   }
 
   ChatsScreenDisplayState getChatsScreenDisplayStyle() {
-    final String screenStyle = settingsBox.get('chatsScreenDisplayStyle', defaultValue: ScreenStyle.floating.name);
+    final String screenStyle = settingsBox.get('chatsScreenDisplayStyle', defaultValue: LayoutStyle.floating.name);
     final String backgroundImagePath = settingsBox.get('chatsScreenBackgroundImagePath', defaultValue: 'assets/images/7.jpeg');
     final double tileOpacity = settingsBox.get('chatsScreenTileOpacity', defaultValue: 1.0);
     final double tileBorderRadius = settingsBox.get('chatsScreeTileBorderRadius', defaultValue: 12.0);
 
     return ChatsScreenDisplayState(
-      screenStyle: ScreenStyle.values.byName(screenStyle),
+      screenStyle: LayoutStyle.values.byName(screenStyle),
       backgroundImagePath: backgroundImagePath,
       tileOpacity: tileOpacity,
       tileBorderRadius: tileBorderRadius,
@@ -205,6 +206,26 @@ class Storage {
       'chatsScreenTileOpacity': chatsScreenDisplayState.tileOpacity,
       'chatsScreenTileBorderRadius': chatsScreenDisplayState.tileBorderRadius,
       'chatsScreenBackgroundImagePath': chatsScreenDisplayState.backgroundImagePath,
+    };
+
+    await settingsBox.putAll(entries);
+  }
+
+  ScreenStyleState getScreenStyleState({required String screenName}) {
+    final String layoutStyle = settingsBox.get('${screenName}layoutStyle', defaultValue: LayoutStyle.floating.name);
+    final double opacity = settingsBox.get('${screenName}opacity', defaultValue: 12);
+    final double borderRadius = settingsBox.get('${screenName}borderRadius', defaultValue: 12);
+    final String backgroundImage = settingsBox.get('${screenName}backgroundImage', defaultValue: 'assets/images/7.jpeg');
+
+    return ScreenStyleState(layoutStyle: LayoutStyle.values.byName(layoutStyle), opacity: opacity, borderRadius: borderRadius, backgroundImage: backgroundImage);
+  }
+
+  Future<void> setScreenStyleState({required String screenName, required ScreenStyleState screenStyle}) async {
+    final entries = {
+      '${screenName}layoutStyle': screenStyle.layoutStyle.name,
+      '${screenName}opacity': screenStyle.opacity,
+      '${screenName}borderRadius': screenStyle.borderRadius,
+      '${screenName}backgroundImage': screenStyle.backgroundImage,
     };
 
     await settingsBox.putAll(entries);

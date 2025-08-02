@@ -17,7 +17,7 @@ class ImageCropperScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final ImageCropperState imageCropperState = ref.watch(imageCropperNotifierProvider);
 
     final double cropAreaWidth = Sizes.screenWidth;

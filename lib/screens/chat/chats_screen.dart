@@ -30,7 +30,7 @@ class ChatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     final AsyncValue<Map<String, dynamic>> chatsWS = ref.watch(chatsWSNotifierProvider);
 
@@ -109,7 +109,7 @@ class _ChatsWidgetState extends ConsumerState<ChatsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final AsyncValue<List<ChatModel>> chats = ref.watch(chatsNotifierProvider);
     return RefreshIndicator(
       color: theme.primaryText,
@@ -139,9 +139,9 @@ class ChatListWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -188,9 +188,9 @@ class ChatTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
     double blurSigma = isRefreshing ? 3 : 0;
     final bool showHole = chat.participant.isOnline;
 
@@ -317,7 +317,7 @@ class _AvatarWithHoleAnimatedState extends ConsumerState<AvatarWithHoleAnimated>
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return AnimatedBuilder(
       animation: _radiusAnimation,
       builder: (context, child) {
@@ -457,7 +457,7 @@ class GroupsWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Center(
       child: Text(
         'Will be available soon, ⌛',
@@ -503,9 +503,9 @@ void showChatsScreenSettingsDialog(BuildContext context) {
     builder: (context) {
       return Consumer(
         builder: (context, ref, child) {
-          final theme = ref.watch(themeNotifierProvider);
+          final theme = ref.watch(themeProvider);
           final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-          final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+          final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
           final double width = 96.dp;
           final double height = 16 / 9 * width;
@@ -559,7 +559,7 @@ void showChatsScreenSettingsDialog(BuildContext context) {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => ref.read(chatsScreenStyleProvider.notifier).updateChatsScreenStyle(screenStyle: ScreenStyle.edgeToEdge),
+                          onTap: () => ref.read(chatsScreenStyleProvider.notifier).updateChatsScreenStyle(screenStyle: LayoutStyle.edgeToEdge),
                           child: Container(
                             height: 64.dp,
                             decoration: BoxDecoration(
@@ -578,7 +578,7 @@ void showChatsScreenSettingsDialog(BuildContext context) {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => ref.read(chatsScreenStyleProvider.notifier).updateChatsScreenStyle(screenStyle: ScreenStyle.floating),
+                          onTap: () => ref.read(chatsScreenStyleProvider.notifier).updateChatsScreenStyle(screenStyle: LayoutStyle.floating),
                           child: Container(
                             height: 64.dp,
                             decoration: BoxDecoration(

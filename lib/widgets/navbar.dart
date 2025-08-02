@@ -35,7 +35,7 @@ class _NavbarState extends ConsumerState<Navbar> {
 
   @override
   Widget build(BuildContext context) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final List<NavbarModel> items = ref.watch(navbarProvider).where((NavbarModel navbarItem) => navbarItem.isEnabled).toList();
     final int selectedIndex = ref.watch(selectedIndexProvider);
 

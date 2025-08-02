@@ -62,7 +62,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with AutomaticKeepA
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final int tabIndex = ref.watch(searchScreenTabIndexProvider);
 
     return Scaffold(
@@ -150,10 +150,10 @@ class _FeedSearchWidgetState extends ConsumerState<FeedSearchWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final AsyncValue<List<FeedModel>> asyncFeeds = ref.watch(feedSearchNotifierProvider);
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     final BorderRadius borderRadius = BorderRadius.circular(isFloating ? displayState.cardBorderRadius : 0);
     final BorderSide borderSide = BorderSide(color: theme.secondaryBackground, width: 0.5);
@@ -292,10 +292,10 @@ class _UserSearchWidgetState extends ConsumerState<UserSearchWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final AsyncValue<List<UserModel>> asyncUsers = ref.watch(userSearchNotifierProvider);
     final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     final BorderRadius borderRadius = BorderRadius.circular(isFloating ? displayState.tileBorderRadius : 0);
     final BorderSide borderSide = BorderSide(color: theme.secondaryBackground, width: 0.5);
@@ -412,7 +412,7 @@ class ProfileSearchCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

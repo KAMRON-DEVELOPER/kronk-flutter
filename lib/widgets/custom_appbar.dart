@@ -34,7 +34,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Container(
       decoration: BoxDecoration(
         color: theme.primaryBackground,

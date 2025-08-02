@@ -41,7 +41,7 @@ class _DatePickerState extends ConsumerState<DatePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
 
     return Column(
       children: [

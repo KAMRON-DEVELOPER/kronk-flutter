@@ -28,7 +28,7 @@ class _RequestForgotPasswordScreenState extends ConsumerState<RequestForgotPassw
 
   @override
   Widget build(BuildContext context) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final AsyncValue<bool> asyncConnectivity = ref.watch(connectivityNotifierProvider);
 
     asyncConnectivity.when(

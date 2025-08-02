@@ -14,7 +14,7 @@ class CustomToggle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     return GestureDetector(
       onTap: toggleable ? () async => await ref.read(navbarProvider.notifier).toggleNavbarItem(index: index) : null,
       child: AnimatedContainer(

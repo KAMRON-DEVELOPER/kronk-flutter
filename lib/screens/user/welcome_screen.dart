@@ -16,7 +16,7 @@ class WelcomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final AsyncValue<bool> isOnline = ref.watch(connectivityNotifierProvider);
     void onPressed() {
       isOnline.when(

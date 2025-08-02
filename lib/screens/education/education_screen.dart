@@ -14,7 +14,7 @@ class EducationScreen extends ConsumerStatefulWidget {
 class _EducationScreenState extends ConsumerState<EducationScreen> {
   @override
   Widget build(BuildContext context) {
-    final MyTheme activeTheme = ref.watch(themeNotifierProvider);
+    final MyTheme activeTheme = ref.watch(themeProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Education Screen'), automaticallyImplyLeading: false),
       body: Center(

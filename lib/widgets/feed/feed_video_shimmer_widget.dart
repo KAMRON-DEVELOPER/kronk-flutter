@@ -8,7 +8,7 @@ class FeedVideoShimmerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeTheme = ref.watch(themeNotifierProvider);
+    final activeTheme = ref.watch(themeProvider);
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: activeTheme.primaryBackground,

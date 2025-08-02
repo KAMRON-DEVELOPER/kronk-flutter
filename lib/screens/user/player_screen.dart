@@ -15,7 +15,7 @@ class PlayerScreen extends ConsumerStatefulWidget {
 class _EducationScreenState extends ConsumerState<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
-    final MyTheme currentTheme = ref.watch(themeNotifierProvider);
+    final MyTheme currentTheme = ref.watch(themeProvider);
 
     return Scaffold(
       backgroundColor: currentTheme.primaryBackground,

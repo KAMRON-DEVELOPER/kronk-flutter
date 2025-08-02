@@ -36,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     return DefaultTabController(
       length: EngagementType.values.length,
@@ -116,7 +116,7 @@ class ProfileCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final bool isFollowing = user.isFollowing ?? false;
     final bool isFollowingNull = user.isFollowing == null;
 
@@ -407,9 +407,9 @@ class EngagementFeedList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
 
     return RefreshIndicator(
       color: theme.primaryText,
@@ -452,7 +452,7 @@ class _ProfileBioWidgetState extends ConsumerState<ProfileBioWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
 
     final textStyle = GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600);
 

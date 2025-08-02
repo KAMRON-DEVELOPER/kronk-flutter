@@ -44,12 +44,12 @@ class FeedCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final FeedModel feed = ref.watch(feedCardStateProvider(initialFeed));
     final FeedCardStateNotifier notifier = ref.read(feedCardStateProvider(initialFeed).notifier);
 
     final displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
     return VisibilityDetector(
       key: ValueKey('1-${feed.id}'),
       onVisibilityChanged: (info) async => await notifier.onVisibilityChanged(info: info),
@@ -88,7 +88,7 @@ class FeedBodySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
 
     if (isEditable) {
@@ -129,7 +129,7 @@ class _FeedBodyInputWidgetState extends ConsumerState<FeedBodyInputWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return TextField(
       controller: textEditingController,
       style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
@@ -164,7 +164,7 @@ class FeedHeaderSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     double blurSigma = isRefreshing ? 3 : 0;
 
     final String? avatarUrl = feed.author.avatarUrl;
@@ -233,7 +233,7 @@ class FeedCardMenuButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final int tabIndex = ref.watch(feedsScreenTabIndexProvider);
     final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
     return Row(
@@ -391,7 +391,7 @@ class FeedVideoWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final VideoSourceState videoSourceState = VideoSourceState(feedId: feed.id, videoUrl: feed.videoUrl, videoFile: feed.videoFile);
     final videoController = ref.watch(videoControllerProvider(videoSourceState));
     final videoControllerNotifier = ref.read(videoControllerProvider(videoSourceState).notifier);
@@ -529,7 +529,7 @@ class FeedImageWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
 
     final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
     double blurSigma = isRefreshing ? 3 : 0;
@@ -618,7 +618,7 @@ class AddMediaWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     final displayState = ref.watch(feedsScreenStyleProvider);
     return GestureDetector(
       onTap: () async {
@@ -722,7 +722,7 @@ class FeedActionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
 
     final IconData iconToUse = interacted ? iconDataFill : iconDataOutline;
     final Color color = interacted ? iconDataOutline.appropriateColor : theme.primaryText;

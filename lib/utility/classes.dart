@@ -50,14 +50,14 @@ class VideoOverlayState {
 }
 
 class FeedScreenDisplayState {
-  final ScreenStyle screenStyle;
+  final LayoutStyle screenStyle;
   final double cardOpacity;
   final double cardBorderRadius;
   final String backgroundImagePath;
 
   FeedScreenDisplayState({required this.screenStyle, required this.cardOpacity, required this.cardBorderRadius, required this.backgroundImagePath});
 
-  FeedScreenDisplayState copyWith({ScreenStyle? screenStyle, double? cardOpacity, double? cardBorderRadius, String? backgroundImagePath}) {
+  FeedScreenDisplayState copyWith({LayoutStyle? screenStyle, double? cardOpacity, double? cardBorderRadius, String? backgroundImagePath}) {
     return FeedScreenDisplayState(
       screenStyle: screenStyle ?? this.screenStyle,
       cardOpacity: cardOpacity ?? this.cardOpacity,
@@ -68,7 +68,7 @@ class FeedScreenDisplayState {
 
   factory FeedScreenDisplayState.from(
     FeedScreenDisplayState base, {
-    ScreenStyle? feedScreenDisplayStyle,
+    LayoutStyle? feedScreenDisplayStyle,
     double? cardOpacity,
     double? cardBorderRadius,
     String? backgroundImagePath,
@@ -83,14 +83,14 @@ class FeedScreenDisplayState {
 }
 
 class ChatsScreenDisplayState {
-  final ScreenStyle screenStyle;
+  final LayoutStyle screenStyle;
   final double tileOpacity;
   final double tileBorderRadius;
   final String backgroundImagePath;
 
   ChatsScreenDisplayState({required this.screenStyle, required this.tileOpacity, required this.tileBorderRadius, required this.backgroundImagePath});
 
-  ChatsScreenDisplayState copyWith({ScreenStyle? screenStyle, double? tileOpacity, double? tileBorderRadius, String? backgroundImagePath}) {
+  ChatsScreenDisplayState copyWith({LayoutStyle? screenStyle, double? tileOpacity, double? tileBorderRadius, String? backgroundImagePath}) {
     return ChatsScreenDisplayState(
       screenStyle: screenStyle ?? this.screenStyle,
       tileOpacity: tileOpacity ?? this.tileOpacity,
@@ -99,12 +99,42 @@ class ChatsScreenDisplayState {
     );
   }
 
-  factory ChatsScreenDisplayState.from(ChatsScreenDisplayState base, {ScreenStyle? screenStyle, double? tileOpacity, double? tileBorderRadius, String? backgroundImagePath}) {
+  factory ChatsScreenDisplayState.from(ChatsScreenDisplayState base, {LayoutStyle? screenStyle, double? tileOpacity, double? tileBorderRadius, String? backgroundImagePath}) {
     return ChatsScreenDisplayState(
       screenStyle: screenStyle ?? base.screenStyle,
       tileOpacity: tileOpacity ?? base.tileOpacity,
       tileBorderRadius: tileBorderRadius ?? base.tileBorderRadius,
       backgroundImagePath: backgroundImagePath ?? base.backgroundImagePath,
+    );
+  }
+}
+
+class ScreenStyleState {
+  final String screenName;
+  final LayoutStyle layoutStyle;
+  final double opacity;
+  final double borderRadius;
+  final String backgroundImage;
+
+  ScreenStyleState({required this.screenName, required this.layoutStyle, required this.opacity, required this.borderRadius, required this.backgroundImage});
+
+  ScreenStyleState copyWith({required String screenName, LayoutStyle? layoutStyle, double? opacity, double? borderRadius, String? backgroundImage}) {
+    return ScreenStyleState(
+      screenName: screenName,
+      layoutStyle: layoutStyle ?? this.layoutStyle,
+      opacity: opacity ?? this.opacity,
+      borderRadius: borderRadius ?? this.borderRadius,
+      backgroundImage: backgroundImage ?? this.backgroundImage,
+    );
+  }
+
+  factory ScreenStyleState.from(ScreenStyleState base, {required String screenName, LayoutStyle? layoutStyle, double? opacity, double? borderRadius, String? backgroundImage}) {
+    return ScreenStyleState(
+      screenName: screenName,
+      layoutStyle: layoutStyle ?? base.layoutStyle,
+      opacity: opacity ?? base.opacity,
+      borderRadius: borderRadius ?? base.borderRadius,
+      backgroundImage: backgroundImage ?? base.backgroundImage,
     );
   }
 }

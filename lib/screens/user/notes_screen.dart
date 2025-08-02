@@ -11,12 +11,12 @@ class NotesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return Scaffold(
       appBar: CustomAppBar(
-        appBarHeight: 48,
+        appBarHeight: 48.dp,
         bottomHeight: 0,
-        bottomGap: 4,
+        bottomGap: 4.dp,
         actionsSpacing: 12,
         appBarPadding: EdgeInsets.only(left: 12.dp, right: 6.dp),
         bottomPadding: EdgeInsets.only(left: 12.dp, right: 12.dp, bottom: 4.dp),
