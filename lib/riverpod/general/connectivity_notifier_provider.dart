@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final connectivityNotifierProvider = AutoDisposeAsyncNotifierProvider<AsyncConnectivityNotifier, bool>(() => AsyncConnectivityNotifier());
+final connectivityProvider = AutoDisposeAsyncNotifierProvider<AsyncConnectivityNotifier, bool>(() => AsyncConnectivityNotifier());
 
 class AsyncConnectivityNotifier extends AutoDisposeAsyncNotifier<bool> {
   late Connectivity _connectivity;

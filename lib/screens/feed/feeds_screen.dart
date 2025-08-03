@@ -6,13 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/models/feed_model.dart';
 import 'package:kronk/riverpod/feed/feed_notification_provider.dart';
-import 'package:kronk/riverpod/feed/feed_screen_style_provider.dart';
 import 'package:kronk/riverpod/feed/timeline_provider.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/exceptions.dart';
 import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_drawer.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
 import 'package:kronk/widgets/feed/feed_notification_widget.dart';
@@ -29,8 +30,8 @@ class FeedsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return DefaultTabController(
       length: 2,
@@ -42,7 +43,7 @@ class FeedsScreen extends ConsumerWidget {
           });
           return Scaffold(
             resizeToAvoidBottomInset: false,
-            appBar: MainAppBar(titleText: 'Feeds', tabText1: 'discover', tabText2: 'following', onTap: () => showFeedScreenSettingsDialog(context)),
+            appBar: MainAppBar(titleText: 'Feeds', tabText1: 'discover', tabText2: 'following', onTap: () => showScreenStyleStateDialog(context, 'feeds')),
             body: Stack(
               children: [
                 /// Static background images
@@ -55,7 +56,7 @@ class FeedsScreen extends ConsumerWidget {
                     child: Opacity(
                       opacity: 0.4,
                       child: Image.asset(
-                        displayState.backgroundImagePath,
+                        screenStyle.backgroundImage,
                         fit: BoxFit.cover,
                         cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
                         cacheWidth: Sizes.screenWidth.cacheSize(context),
@@ -227,8 +228,8 @@ class FeedListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return Scrollbar(
       controller: controller,
@@ -269,166 +270,4 @@ class FeedListWidget extends ConsumerWidget {
       ),
     );
   }
-}
-
-void showFeedScreenSettingsDialog(BuildContext context) {
-  const List<String> backgroundImages = [
-    '1.jpg',
-    '2.jpg',
-    '3.jpg',
-    '5.jpg',
-    '6.jpeg',
-    '7.jpeg',
-    '8.jpeg',
-    '9.jpeg',
-    '10.jpeg',
-    '11.jpeg',
-    '12.jpeg',
-    '13.jpeg',
-    '14.jpeg',
-    '15.jpeg',
-    '16.jpeg',
-    '17.jpeg',
-    '18.jpeg',
-    '19.jpg',
-    '20.jpg',
-    '21.jpg',
-    '22.jpg',
-    '23.jpg',
-    '24.jpg',
-    '25.jpg',
-    '26.jpg',
-    '27.jpg',
-    '28.jpg',
-  ];
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return Consumer(
-        builder: (context, ref, child) {
-          final theme = ref.watch(themeProvider);
-          final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-          final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
-
-          final double width = 96.dp;
-          final double height = 16 / 9 * width;
-          return Dialog(
-            backgroundColor: theme.tertiaryBackground,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-            child: Padding(
-              padding: EdgeInsets.all(8.dp),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                spacing: 8.dp,
-                children: [
-                  /// Background image list
-                  SizedBox(
-                    height: height,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: backgroundImages.length,
-                      itemBuilder: (context, index) {
-                        final String imageName = 'assets/images/${backgroundImages.elementAt(index)}';
-                        return Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            /// Images list
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8.dp),
-                              child: GestureDetector(
-                                onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(backgroundImagePath: imageName),
-                                child: Image.asset(imageName, height: height, width: width, cacheHeight: height.cacheSize(context), cacheWidth: width.cacheSize(context)),
-                              ),
-                            ),
-
-                            /// Selected background image indicator
-                            if (displayState.backgroundImagePath == imageName)
-                              Positioned(
-                                bottom: 8.dp,
-                                child: Icon(Icons.check_circle_rounded, color: theme.secondaryText, size: 32.dp),
-                              ),
-                          ],
-                        );
-                      },
-                      separatorBuilder: (context, index) => SizedBox(width: 8.dp),
-                    ),
-                  ),
-
-                  /// Toggle button
-                  Row(
-                    spacing: 8.dp,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(screenStyle: LayoutStyle.edgeToEdge),
-                          child: Container(
-                            height: 64.dp,
-                            decoration: BoxDecoration(
-                              color: theme.secondaryBackground,
-                              borderRadius: BorderRadius.circular(8.dp),
-                              border: Border.all(color: isFloating ? theme.secondaryBackground : theme.primaryText),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Edge-to-edge',
-                                style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(screenStyle: LayoutStyle.floating),
-                          child: Container(
-                            height: 64.dp,
-                            decoration: BoxDecoration(
-                              color: theme.secondaryBackground,
-                              borderRadius: BorderRadius.circular(8.dp),
-                              border: Border.all(color: isFloating ? theme.primaryText : theme.secondaryBackground),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'Floating',
-                                style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  /// Slider Rounded Corner
-                  Slider(
-                    value: displayState.cardBorderRadius,
-                    min: 0,
-                    max: 24,
-                    activeColor: theme.primaryText,
-                    inactiveColor: theme.primaryText.withValues(alpha: 0.2),
-                    thumbColor: theme.primaryText,
-                    onChanged: (double newRadius) => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(cardBorderRadius: newRadius),
-                  ),
-
-                  /// Slider opacity
-                  Slider(
-                    value: displayState.cardOpacity,
-                    min: 0,
-                    max: 1,
-                    activeColor: theme.primaryText,
-                    inactiveColor: theme.primaryText.withValues(alpha: 0.2),
-                    thumbColor: theme.primaryText,
-                    onChanged: (double newOpacity) => ref.read(feedsScreenStyleProvider.notifier).updateFeedScreenStyle(cardOpacity: newOpacity),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    },
-  );
 }

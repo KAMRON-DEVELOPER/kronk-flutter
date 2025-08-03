@@ -20,8 +20,8 @@ class VocabulariesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ScreenStyleState displayState = ref.watch(screenStyleStateProvider('vocabulary'));
-    final bool isFloating = displayState.layoutStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('vocabularies'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return DefaultTabController(
       length: 2,
@@ -39,7 +39,7 @@ class VocabulariesScreen extends ConsumerWidget {
                 child: Opacity(
                   opacity: 0.4,
                   child: Image.asset(
-                    displayState.backgroundImage,
+                    screenStyle.backgroundImage,
                     fit: BoxFit.cover,
                     cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
                     cacheWidth: Sizes.screenWidth.cacheSize(context),
@@ -71,42 +71,42 @@ class _VocabulariesWidgetState extends ConsumerState<VocabulariesWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider);
-    final AsyncValue<List<VocabularyModel>> chats = ref.watch(vocabulariesProvider);
+    final AsyncValue<VocabulariesState> vocabulariesState = ref.watch(vocabulariesProvider);
     return RefreshIndicator(
       color: theme.primaryText,
       backgroundColor: theme.secondaryBackground,
       onRefresh: () => ref.watch(vocabulariesProvider.notifier).refresh(),
-      child: chats.when(
+      child: vocabulariesState.when(
         error: (error, stackTrace) {
           if (error is DioException) return Center(child: Text('${error.message}'));
           return Center(child: Text('$error'));
         },
-        loading: () => ChatListWidget(chats: _previousVocabularies, isRefreshing: true),
-        data: (List<VocabularyModel> chats) {
-          _previousVocabularies = chats;
-          return ChatListWidget(chats: chats, isRefreshing: false);
+        loading: () => VocabulariesListWidget(vocabularies: _previousVocabularies, isRefreshing: true),
+        data: (VocabulariesState state) {
+          _previousVocabularies = state.vocabularies;
+          return VocabulariesListWidget(vocabularies: state.vocabularies, isRefreshing: false);
         },
       ),
     );
   }
 }
 
-/// ChatListWidget
-class ChatListWidget extends ConsumerWidget {
-  final List<ChatModel> chats;
+/// VocabulariesListWidget
+class VocabulariesListWidget extends ConsumerWidget {
+  final List<VocabularyModel> vocabularies;
   final bool isRefreshing;
 
-  const ChatListWidget({super.key, required this.chats, required this.isRefreshing});
+  const VocabulariesListWidget({super.key, required this.vocabularies, required this.isRefreshing});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('vocabularies'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        if (chats.isEmpty && !isRefreshing)
+        if (vocabularies.isEmpty && !isRefreshing)
           SliverFillRemaining(
             child: Center(
               child: Column(
@@ -126,13 +126,14 @@ class ChatListWidget extends ConsumerWidget {
             ),
           ),
 
-        if (chats.isNotEmpty)
+        if (vocabularies.isNotEmpty)
           SliverPadding(
             padding: EdgeInsets.all(isFloating ? 12.dp : 0),
             sliver: SliverList.separated(
-              itemCount: chats.length,
+              itemCount: vocabularies.length,
               separatorBuilder: (context, index) => SizedBox(height: 12.dp),
-              itemBuilder: (context, index) => ChatTile(key: ValueKey(chats.elementAt(index).id), chat: chats.elementAt(index), isRefreshing: isRefreshing),
+              itemBuilder: (context, index) =>
+                  VocabularyCard(key: ValueKey(vocabularies.elementAt(index).id), vocabulary: vocabularies.elementAt(index), isRefreshing: isRefreshing),
             ),
           ),
       ],
@@ -141,84 +142,32 @@ class ChatListWidget extends ConsumerWidget {
 }
 
 /// ChatTile
-class ChatTile extends ConsumerWidget {
-  final ChatModel chat;
+class VocabularyCard extends ConsumerWidget {
+  final VocabularyModel vocabulary;
   final bool isRefreshing;
 
-  const ChatTile({super.key, required this.chat, required this.isRefreshing});
+  const VocabularyCard({super.key, required this.vocabulary, required this.isRefreshing});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == ScreenStyle.floating;
-    double blurSigma = isRefreshing ? 3 : 0;
-    final bool showHole = chat.participant.isOnline;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('vocabularies'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
-    return GestureDetector(
-      onTap: () {
-        ref.read(sharedChat.notifier).state = chat;
-        context.pushNamed('chat');
-      },
-      child: Material(
-        color: Colors.transparent,
-        child: ListTile(
-          tileColor: theme.primaryBackground.withValues(alpha: displayState.tileOpacity),
-          contentPadding: EdgeInsets.symmetric(horizontal: 10.dp, vertical: 0),
-          shape: RoundedRectangleBorder(
-            borderRadius: isFloating ? BorderRadius.circular(displayState.tileBorderRadius) : BorderRadius.zero,
-            side: isFloating ? BorderSide.none : BorderSide(color: theme.outline, width: 0.5.dp),
-          ),
-          leading: Stack(
-            children: [
-              /// Avatar
-              AvatarWithHoleAnimated(
-                showHole: showHole,
-                holeRadius: 9.dp,
-                avatarRadius: 28.dp,
-                avatarUrl: '${constants.bucketEndpoint}/${chat.participant.avatarUrl}',
-                blurSigma: blurSigma,
-              ),
-
-              /// Online & Offline status (animated)
-              AnimatedIndicator(showHole: showHole, indicatorSize: 16.dp),
-            ],
-          ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                chat.participant.name,
-                style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
-              ),
-
-              if (chat.lastActivityAt != null)
-                Text(
-                  chat.lastActivityAt!.toChatLabel(),
-                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
-                ),
-            ],
-          ),
-          subtitle: Row(
-            children: [
-              // Fading message text with space before icon
-              Expanded(
-                child: Text(
-                  '${chat.lastMessage?.message}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
-                ),
-              ),
-
-              // Selection or unread icon (always visible, not faded)
-              SizedBox(
-                width: 24.dp,
-                height: 24.dp,
-                // TODO Selection & Unread count widgets
-              ),
-            ],
-          ),
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.all(0),
+      color: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isFloating ? screenStyle.borderRadius : 0),
+        side: isFloating ? BorderSide(color: theme.secondaryBackground, width: 0.5) : BorderSide.none,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(8.dp),
+        child: Column(
+          spacing: 8.dp,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [Text('vocabulary.word: ${vocabulary.word}'), Text('vocabulary.translation: ${vocabulary.translation}')],
         ),
       ),
     );

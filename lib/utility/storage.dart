@@ -217,7 +217,13 @@ class Storage {
     final double borderRadius = settingsBox.get('${screenName}borderRadius', defaultValue: 12);
     final String backgroundImage = settingsBox.get('${screenName}backgroundImage', defaultValue: 'assets/images/7.jpeg');
 
-    return ScreenStyleState(layoutStyle: LayoutStyle.values.byName(layoutStyle), opacity: opacity, borderRadius: borderRadius, backgroundImage: backgroundImage);
+    return ScreenStyleState(
+      screenName: screenName,
+      layoutStyle: LayoutStyle.values.byName(layoutStyle),
+      opacity: opacity,
+      borderRadius: borderRadius,
+      backgroundImage: backgroundImage,
+    );
   }
 
   Future<void> setScreenStyleState({required String screenName, required ScreenStyleState screenStyle}) async {

@@ -26,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -125,7 +125,7 @@ class SectionLabelWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     return SliverToBoxAdapter(
       child: Container(
         margin: EdgeInsets.only(left: 16.dp, bottom: isServie ? 0 : 4.dp),
@@ -143,8 +143,8 @@ class AppearanceSectionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
-    final themeNotifier = ref.read(themeNotifierProvider.notifier);
+    final MyTheme theme = ref.watch(themeProvider);
+    final themeNotifier = ref.read(themeProvider.notifier);
     final List<Themes> allThemes = themeNotifier.getThemes();
 
     return SliverToBoxAdapter(
@@ -218,7 +218,7 @@ class ServicesSectionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final List<NavbarModel> services = ref.watch(navbarProvider);
 
     return SliverPadding(
@@ -283,7 +283,7 @@ class StatisticsSectionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     AsyncValue<StatisticsModel> statistics = ref.watch(settingsStatisticsWsStreamProvider);
 
     final List<String> statNames = ['weekly', 'monthly', 'yearly'];
@@ -382,7 +382,7 @@ class SupportSectionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 16.dp),
       sliver: SliverToBoxAdapter(
@@ -437,7 +437,7 @@ class DisappointingSectionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 12.dp),
       sliver: SliverToBoxAdapter(
@@ -519,7 +519,7 @@ class MaraudersMapFootprints extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeNotifierProvider);
+    final theme = ref.watch(themeProvider);
     return SliverToBoxAdapter(
       child: ShaderMask(
         shaderCallback: (bounds) => LinearGradient(
@@ -539,7 +539,7 @@ class BackButtonWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeNotifierProvider);
+    final MyTheme theme = ref.watch(themeProvider);
     final bool isAnyServiceEnabled = ref.watch(navbarProvider).any((service) => service.isEnabled);
 
     return IconButton(

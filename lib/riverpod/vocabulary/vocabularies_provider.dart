@@ -9,57 +9,74 @@ import 'package:kronk/riverpod/general/connectivity_notifier_provider.dart';
 import 'package:kronk/services/api_service/vocabulary_service.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:mime/mime.dart';
-import 'package:tuple/tuple.dart';
 
-final vocabulariesProvider = AutoDisposeAsyncNotifierProvider<ChatsNotifier, List<VocabularyModel>>(ChatsNotifier.new);
+class VocabulariesState {
+  final List<VocabularyModel> vocabularies;
+  final int total;
+  final bool hasMore;
 
-class ChatsNotifier extends AutoDisposeAsyncNotifier<List<VocabularyModel>> {
+  const VocabulariesState({this.vocabularies = const [], this.total = 0, this.hasMore = true});
+
+  VocabulariesState copyWith({List<VocabularyModel>? vocabularies, int? total, bool? hasMore}) {
+    return VocabulariesState(vocabularies: vocabularies ?? this.vocabularies, total: total ?? this.total, hasMore: hasMore ?? this.hasMore);
+  }
+}
+
+final vocabulariesProvider = AutoDisposeAsyncNotifierProvider<VocabulariesNotifier, VocabulariesState>(VocabulariesNotifier.new);
+
+class VocabulariesNotifier extends AutoDisposeAsyncNotifier<VocabulariesState> {
   late VocabularyService _vocabularyService;
-  int _start = 0;
-  int _end = 20;
+  int _offset = 0;
+  final int _limit = 20;
 
   @override
-  Future<List<VocabularyModel>> build() async {
+  Future<VocabulariesState> build() async {
     _vocabularyService = VocabularyService();
 
     ref.onDispose(() => myLogger.f('onDispose vocabulariesProvider'));
     ref.onCancel(() => myLogger.f('onCancel vocabulariesProvider'));
 
     try {
-      final bool isOnline = ref.read(connectivityNotifierProvider).value ?? false;
-      if (!isOnline) return [];
-      return await _getVocabularies();
+      final bool isOnline = ref.read(connectivityProvider).value ?? false;
+      if (!isOnline) {
+        return const VocabulariesState(hasMore: false);
+      }
+
+      final response = await _vocabularyService.getVocabularies(offset: 0, limit: _limit);
+      _offset = response.item1.length;
+
+      return VocabulariesState(vocabularies: response.item1, total: response.item2, hasMore: response.item1.length < response.item2);
     } catch (error) {
       state = AsyncValue.error(error, StackTrace.current);
-      return [];
+      return const VocabulariesState(hasMore: false);
     }
   }
 
-  Future<List<VocabularyModel>> _getVocabularies() async {
-    try {
-      final Tuple2<List<VocabularyModel>, int> response = await _vocabularyService.getVocabularies();
-      _end = response.item2;
-      return response.item1;
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      return [];
-    }
-  }
+  Future<void> loadMore() async {
+    if (!state.value!.hasMore) return;
 
-  Future<List<VocabularyModel>> refresh() async {
     state = const AsyncValue.loading();
-    final Future<List<VocabularyModel>> vocabularies = _getVocabularies();
-    state = await AsyncValue.guard(() => vocabularies);
-    return vocabularies;
+    final currentState = state.value!;
+
+    final response = await _vocabularyService.getVocabularies(offset: _offset, limit: _limit);
+
+    final newItems = response.item1;
+    final newTotal = response.item2;
+    final newVocabularies = [...currentState.vocabularies, ...newItems];
+
+    _offset += response.item1.length;
+
+    state = AsyncValue.data(VocabulariesState(vocabularies: newVocabularies, total: newTotal, hasMore: newVocabularies.length < newTotal));
   }
 
-  Future<void> loadMore({int steps = 20}) async {
-    _start = _end + 1;
-    _end = _start + steps;
+  Future<void> refresh() async {
+    _offset = 0;
+    state = const AsyncValue.loading();
 
-    final response = await _vocabularyService.getVocabularies(start: _start, end: _end);
+    final response = await _vocabularyService.getVocabularies(offset: _offset, limit: _limit);
+    _offset = response.item1.length;
 
-    state = state.whenData((existing) => [...existing, ...response.item1]);
+    state = AsyncValue.data(VocabulariesState(vocabularies: response.item1, total: response.item2, hasMore: response.item1.length < response.item2));
   }
 
   Future<void> createVocabularies({required List<File> images}) async {
@@ -75,7 +92,7 @@ class ChatsNotifier extends AutoDisposeAsyncNotifier<List<VocabularyModel>> {
 
       final ok = await _vocabularyService.createVocabularies(formData: formData);
       if (!ok) {
-        state = AsyncError('Error occurred', StackTrace.current);
+        state = AsyncError('Error occurred while creating vocabularies', StackTrace.current);
       }
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);

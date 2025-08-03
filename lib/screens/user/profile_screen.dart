@@ -9,7 +9,7 @@ import 'package:kronk/constants/kronk_icon.dart';
 import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/models/feed_model.dart';
 import 'package:kronk/models/user_model.dart';
-import 'package:kronk/riverpod/feed/feed_screen_style_provider.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/riverpod/profile/engagement_feeds.dart';
 import 'package:kronk/riverpod/profile/profile_provider.dart';
@@ -35,8 +35,8 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return DefaultTabController(
       length: EngagementType.values.length,
@@ -50,7 +50,7 @@ class ProfileScreen extends ConsumerWidget {
                 child: Opacity(
                   opacity: 0.4,
                   child: Image.asset(
-                    displayState.backgroundImagePath,
+                    screenStyle.backgroundImage,
                     fit: BoxFit.cover,
                     cacheWidth: Sizes.screenWidth.cacheSize(context),
                     cacheHeight: Sizes.screenHeight.cacheSize(context),
@@ -408,8 +408,8 @@ class EngagementFeedList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return RefreshIndicator(
       color: theme.primaryText,

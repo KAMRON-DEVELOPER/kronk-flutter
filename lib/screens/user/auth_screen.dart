@@ -51,7 +51,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final MyTheme theme = ref.watch(themeProvider);
-    final AsyncValue<bool> isOnline = ref.watch(connectivityNotifierProvider);
+    final AsyncValue<bool> isOnline = ref.watch(connectivityProvider);
 
     isOnline.when(
       data: (bool isOnline) => !isOnline ? Timer(const Duration(seconds: 5), () => context.go('/welcome')) : null,

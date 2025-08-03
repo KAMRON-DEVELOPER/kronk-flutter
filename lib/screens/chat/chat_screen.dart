@@ -9,15 +9,15 @@ import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/riverpod/chat/chat_messages_provider.dart';
 import 'package:kronk/riverpod/chat/chat_state_provider.dart';
 import 'package:kronk/riverpod/chat/chats_provider.dart';
-import 'package:kronk/riverpod/chat/chats_screen_style_provider.dart';
 import 'package:kronk/riverpod/chat/chats_ws_provider.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
-import 'package:kronk/screens/chat/chats_screen.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
+import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/utility/storage.dart';
 
 final sharedChat = StateProvider<ChatModel?>((ref) => null);
@@ -48,8 +48,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chat = ref.watch(chatStateProvider(initialChat!));
     final notifier = ref.watch(chatStateProvider(initialChat).notifier);
 
-    final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -66,7 +66,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: Opacity(
                 opacity: 0.4,
                 child: Image.asset(
-                  displayState.backgroundImagePath,
+                  screenStyle.backgroundImage,
                   fit: BoxFit.cover,
                   cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 56.dp).cacheSize(context),
                   cacheWidth: Sizes.screenWidth.cacheSize(context),
@@ -179,7 +179,7 @@ class MessageBubble extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
     final isSentByUser = message.senderId == userId;
 
     return Row(
@@ -189,7 +189,7 @@ class MessageBubble extends ConsumerWidget {
           padding: EdgeInsets.symmetric(horizontal: 12.dp, vertical: 4.dp),
           alignment: isSentByUser ? Alignment.centerRight : Alignment.centerLeft,
           decoration: BoxDecoration(
-            color: theme.primaryBackground.withValues(alpha: displayState.tileOpacity),
+            color: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
             borderRadius: BorderRadius.circular(12.dp),
           ),
           child: ConstrainedBox(
@@ -385,7 +385,7 @@ class ChatAppBar extends ConsumerWidget implements PreferredSizeWidget {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () => showChatsScreenSettingsDialog(context),
+                onTap: () => showScreenStyleStateDialog(context, 'chats'),
                 child: Icon(Icons.more_vert_rounded, color: theme.primaryText, size: 28.dp),
               ),
             ),

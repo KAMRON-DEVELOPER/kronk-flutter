@@ -7,18 +7,16 @@ import 'package:kronk/constants/kronk_icon.dart';
 import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/models/feed_model.dart';
 import 'package:kronk/models/user_model.dart';
-import 'package:kronk/riverpod/chat/chats_screen_style_provider.dart';
-import 'package:kronk/riverpod/feed/feed_screen_style_provider.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/search_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/screens/chat/chat_screen.dart';
-import 'package:kronk/screens/chat/chats_screen.dart';
-import 'package:kronk/screens/feed/feeds_screen.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
+import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
@@ -86,7 +84,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with AutomaticKeepA
         ),
         actions: [
           GestureDetector(
-            onTap: () => tabIndex == 0 ? showFeedScreenSettingsDialog(context) : showChatsScreenSettingsDialog(context),
+            onTap: () => tabIndex == 0 ? showScreenStyleStateDialog(context, 'feeds') : showScreenStyleStateDialog(context, 'chats'),
             child: Icon(Icons.more_vert_rounded, color: theme.primaryText, size: 24.dp),
           ),
         ],
@@ -152,10 +150,10 @@ class _FeedSearchWidgetState extends ConsumerState<FeedSearchWidget> {
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider);
     final AsyncValue<List<FeedModel>> asyncFeeds = ref.watch(feedSearchNotifierProvider);
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
-    final BorderRadius borderRadius = BorderRadius.circular(isFloating ? displayState.cardBorderRadius : 0);
+    final BorderRadius borderRadius = BorderRadius.circular(isFloating ? screenStyle.borderRadius : 0);
     final BorderSide borderSide = BorderSide(color: theme.secondaryBackground, width: 0.5);
     return Stack(
       children: [
@@ -169,7 +167,7 @@ class _FeedSearchWidgetState extends ConsumerState<FeedSearchWidget> {
             child: Opacity(
               opacity: 0.4,
               child: Image.asset(
-                displayState.backgroundImagePath,
+                screenStyle.backgroundImage,
                 fit: BoxFit.cover,
                 cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
                 cacheWidth: Sizes.screenWidth.cacheSize(context),
@@ -194,7 +192,7 @@ class _FeedSearchWidgetState extends ConsumerState<FeedSearchWidget> {
                   cursorHeight: 20,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: theme.primaryBackground.withValues(alpha: displayState.cardOpacity),
+                    fillColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
                     border: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
                     focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
                     disabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
@@ -294,10 +292,10 @@ class _UserSearchWidgetState extends ConsumerState<UserSearchWidget> {
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider);
     final AsyncValue<List<UserModel>> asyncUsers = ref.watch(userSearchNotifierProvider);
-    final ChatsScreenDisplayState displayState = ref.watch(chatsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
-    final BorderRadius borderRadius = BorderRadius.circular(isFloating ? displayState.tileBorderRadius : 0);
+    final BorderRadius borderRadius = BorderRadius.circular(isFloating ? screenStyle.borderRadius : 0);
     final BorderSide borderSide = BorderSide(color: theme.secondaryBackground, width: 0.5);
     return Stack(
       children: [
@@ -311,7 +309,7 @@ class _UserSearchWidgetState extends ConsumerState<UserSearchWidget> {
             child: Opacity(
               opacity: 0.4,
               child: Image.asset(
-                displayState.backgroundImagePath,
+                screenStyle.backgroundImage,
                 fit: BoxFit.cover,
                 cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
                 cacheWidth: Sizes.screenWidth.cacheSize(context),
@@ -336,7 +334,7 @@ class _UserSearchWidgetState extends ConsumerState<UserSearchWidget> {
                   cursorHeight: 20,
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: theme.primaryBackground.withValues(alpha: displayState.tileOpacity),
+                    fillColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
                     border: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
                     focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
                     disabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),

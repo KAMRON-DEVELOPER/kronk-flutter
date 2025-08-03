@@ -1,14 +1,29 @@
 /// SentenceModel
 class SentenceModel {
+  final String id;
+  final DateTime updatedAt;
+  final DateTime createdAt;
   final String sentence;
   final String translation;
   final String targetLanguage;
   final String ownerId;
   final List<VocabularyModel> words;
 
-  SentenceModel({required this.sentence, required this.translation, required this.targetLanguage, required this.ownerId, required this.words});
+  SentenceModel({
+    required this.id,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.sentence,
+    required this.translation,
+    required this.targetLanguage,
+    required this.ownerId,
+    required this.words,
+  });
 
   factory SentenceModel.fromJson(Map<String, dynamic> json) => SentenceModel(
+    id: json['id'],
+    updatedAt: DateTime.fromMillisecondsSinceEpoch((json['updated_at'] * 1000).round()),
+    createdAt: DateTime.fromMillisecondsSinceEpoch((json['created_at'] * 1000).round()),
     sentence: json['sentence'],
     translation: json['translation'],
     targetLanguage: json['target_language'],
@@ -24,7 +39,19 @@ class SentenceModel {
     'words': words.map((e) => e.toJson()).toList(),
   };
 
-  SentenceModel copyWith({String? sentence, String? translation, String? targetLanguage, String? ownerId, List<VocabularyModel>? words}) => SentenceModel(
+  SentenceModel copyWith({
+    String? id,
+    DateTime? updatedAt,
+    DateTime? createdAt,
+    String? sentence,
+    String? translation,
+    String? targetLanguage,
+    String? ownerId,
+    List<VocabularyModel>? words,
+  }) => SentenceModel(
+    id: id ?? this.id,
+    updatedAt: updatedAt ?? this.updatedAt,
+    createdAt: createdAt ?? this.createdAt,
     sentence: sentence ?? this.sentence,
     translation: translation ?? this.translation,
     targetLanguage: targetLanguage ?? this.targetLanguage,
@@ -35,15 +62,30 @@ class SentenceModel {
 
 /// VocabularyModel
 class VocabularyModel {
+  final String id;
+  final DateTime updatedAt;
+  final DateTime createdAt;
   final String word;
   final String translation;
   final String targetLanguage;
   final List<PhoneticModel> phonetics;
   final List<MeaningModel> meanings;
 
-  VocabularyModel({required this.word, required this.translation, required this.targetLanguage, required this.phonetics, required this.meanings});
+  VocabularyModel({
+    required this.id,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.word,
+    required this.translation,
+    required this.targetLanguage,
+    required this.phonetics,
+    required this.meanings,
+  });
 
   factory VocabularyModel.fromJson(Map<String, dynamic> json) => VocabularyModel(
+    id: json['id'],
+    updatedAt: DateTime.fromMillisecondsSinceEpoch((json['updated_at'] * 1000).round()),
+    createdAt: DateTime.fromMillisecondsSinceEpoch((json['created_at'] * 1000).round()),
     word: json['word'],
     translation: json['translation'],
     targetLanguage: json['target_language'],
@@ -59,7 +101,19 @@ class VocabularyModel {
     'meanings': meanings.map((e) => e.toJson()).toList(),
   };
 
-  VocabularyModel copyWith({String? word, String? translation, String? targetLanguage, List<PhoneticModel>? phonetics, List<MeaningModel>? meanings}) => VocabularyModel(
+  VocabularyModel copyWith({
+    String? id,
+    DateTime? updatedAt,
+    DateTime? createdAt,
+    String? word,
+    String? translation,
+    String? targetLanguage,
+    List<PhoneticModel>? phonetics,
+    List<MeaningModel>? meanings,
+  }) => VocabularyModel(
+    id: id ?? this.id,
+    updatedAt: updatedAt ?? this.updatedAt,
+    createdAt: createdAt ?? this.createdAt,
     word: word ?? this.word,
     translation: translation ?? this.translation,
     targetLanguage: targetLanguage ?? this.targetLanguage,
@@ -70,44 +124,82 @@ class VocabularyModel {
 
 /// PhoneticModel
 class PhoneticModel {
+  final String id;
+  final DateTime updatedAt;
+  final DateTime createdAt;
   final String text;
   final String? audio;
 
-  PhoneticModel({required this.text, this.audio});
+  PhoneticModel({required this.id, required this.updatedAt, required this.createdAt, required this.text, this.audio});
 
-  factory PhoneticModel.fromJson(Map<String, dynamic> json) => PhoneticModel(text: json['text'], audio: json['audio']);
+  factory PhoneticModel.fromJson(Map<String, dynamic> json) => PhoneticModel(
+    id: json['id'],
+    updatedAt: DateTime.fromMillisecondsSinceEpoch((json['updated_at'] * 1000).round()),
+    createdAt: DateTime.fromMillisecondsSinceEpoch((json['created_at'] * 1000).round()),
+    text: json['text'],
+    audio: json['audio'],
+  );
 
   Map<String, dynamic> toJson() => {'text': text, 'audio': audio};
 
-  PhoneticModel copyWith({String? text, String? audio}) => PhoneticModel(text: text ?? this.text, audio: audio ?? this.audio);
+  PhoneticModel copyWith({String? id, DateTime? updatedAt, DateTime? createdAt, String? text, String? audio}) =>
+      PhoneticModel(id: id ?? this.id, updatedAt: updatedAt ?? this.updatedAt, createdAt: createdAt ?? this.createdAt, text: text ?? this.text, audio: audio ?? this.audio);
 }
 
 /// DefinitionModel
 class DefinitionModel {
+  final String id;
+  final DateTime updatedAt;
+  final DateTime createdAt;
   final String definition;
   final String? example;
 
-  DefinitionModel({required this.definition, this.example});
+  DefinitionModel({required this.id, required this.updatedAt, required this.createdAt, required this.definition, this.example});
 
-  factory DefinitionModel.fromJson(Map<String, dynamic> json) => DefinitionModel(definition: json['definition'], example: json['example']);
+  factory DefinitionModel.fromJson(Map<String, dynamic> json) => DefinitionModel(
+    id: json['id'],
+    updatedAt: DateTime.fromMillisecondsSinceEpoch((json['updated_at'] * 1000).round()),
+    createdAt: DateTime.fromMillisecondsSinceEpoch((json['created_at'] * 1000).round()),
+    definition: json['definition'],
+    example: json['example'],
+  );
 
   Map<String, dynamic> toJson() => {'definition': definition, 'example': example};
 
-  DefinitionModel copyWith({String? definition, String? example}) => DefinitionModel(definition: definition ?? this.definition, example: example ?? this.example);
+  DefinitionModel copyWith({String? id, DateTime? updatedAt, DateTime? createdAt, String? definition, String? example}) => DefinitionModel(
+    id: id ?? this.id,
+    updatedAt: updatedAt ?? this.updatedAt,
+    createdAt: createdAt ?? this.createdAt,
+    definition: definition ?? this.definition,
+    example: example ?? this.example,
+  );
 }
 
 /// MeaningModel
 class MeaningModel {
+  final String id;
+  final DateTime updatedAt;
+  final DateTime createdAt;
   final String partOfSpeech;
   final List<DefinitionModel> definitions;
 
-  MeaningModel({required this.partOfSpeech, required this.definitions});
+  MeaningModel({required this.id, required this.updatedAt, required this.createdAt, required this.partOfSpeech, required this.definitions});
 
-  factory MeaningModel.fromJson(Map<String, dynamic> json) =>
-      MeaningModel(partOfSpeech: json['part_of_speech'], definitions: (json['definitions'] as List).map((e) => DefinitionModel.fromJson(e)).toList());
+  factory MeaningModel.fromJson(Map<String, dynamic> json) => MeaningModel(
+    id: json['id'],
+    updatedAt: DateTime.fromMillisecondsSinceEpoch((json['updated_at'] * 1000).round()),
+    createdAt: DateTime.fromMillisecondsSinceEpoch((json['created_at'] * 1000).round()),
+    partOfSpeech: json['part_of_speech'],
+    definitions: (json['definitions'] as List).map((e) => DefinitionModel.fromJson(e)).toList(),
+  );
 
   Map<String, dynamic> toJson() => {'part_of_speech': partOfSpeech, 'definitions': definitions.map((e) => e.toJson()).toList()};
 
-  MeaningModel copyWith({String? partOfSpeech, List<DefinitionModel>? definitions}) =>
-      MeaningModel(partOfSpeech: partOfSpeech ?? this.partOfSpeech, definitions: definitions ?? this.definitions);
+  MeaningModel copyWith({String? id, DateTime? updatedAt, DateTime? createdAt, String? partOfSpeech, List<DefinitionModel>? definitions}) => MeaningModel(
+    id: id ?? this.id,
+    updatedAt: updatedAt ?? this.updatedAt,
+    createdAt: createdAt ?? this.createdAt,
+    partOfSpeech: partOfSpeech ?? this.partOfSpeech,
+    definitions: definitions ?? this.definitions,
+  );
 }

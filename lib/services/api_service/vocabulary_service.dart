@@ -36,28 +36,28 @@ class VocabularyService {
     }
   }
 
-  Future<Tuple2<List<VocabularyModel>, int>> getVocabularies({int start = 0, int end = 20}) async {
+  Future<Tuple2<List<VocabularyModel>, int>> getVocabularies({int offset = 0, int limit = 20}) async {
     try {
-      Response response = await _dio.get('');
+      Response response = await _dio.get('', queryParameters: {'offset': offset, 'limit': limit});
       myLogger.i('🚀 response.data in VocabularyModel: ${response.data}  statusCode: ${response.statusCode}');
       final data = response.data['vocabularies'] as List;
-      final end = response.data['end'] as int;
+      final total = response.data['total'] as int;
       final vocabularies = data.map((json) => VocabularyModel.fromJson(json)).toList();
-      return Tuple2(vocabularies, end);
+      return Tuple2(vocabularies, total);
     } catch (error) {
       myLogger.w('catch in VocabularyModel: ${error.toString()}');
       rethrow;
     }
   }
 
-  Future<Tuple2<List<SentenceModel>, int>> getSentences({required String chatId, int start = 0, int end = 20}) async {
+  Future<Tuple2<List<SentenceModel>, int>> getSentences({int offset = 0, int limit = 20}) async {
     try {
-      Response response = await _dio.get('/sentences');
+      Response response = await _dio.get('/sentences', queryParameters: {'offset': offset, 'limit': limit});
       myLogger.i('🚀 response.data in getSentences: ${response.data}  statusCode: ${response.statusCode}');
       final data = response.data['sentences'] as List;
-      final end = response.data['end'] as int;
+      final total = response.data['total'] as int;
       final sentences = data.map((json) => SentenceModel.fromJson(json)).toList();
-      return Tuple2(sentences, end);
+      return Tuple2(sentences, total);
     } catch (error) {
       myLogger.w('catch in getSentences: ${error.toString()}');
       rethrow;

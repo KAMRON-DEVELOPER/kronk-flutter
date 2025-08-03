@@ -6,14 +6,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/models/feed_model.dart';
-import 'package:kronk/riverpod/feed/feed_screen_style_provider.dart';
 import 'package:kronk/riverpod/feed/timeline_provider.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/screens/feed/feeds_screen.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
+import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
 
@@ -24,8 +25,8 @@ class FeedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(sharedFeed);
     final MyTheme theme = ref.watch(themeProvider);
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -45,7 +46,7 @@ class FeedScreen extends ConsumerWidget {
         ),
         actions: [
           GestureDetector(
-            onTap: () => showFeedScreenSettingsDialog(context),
+            onTap: () => showScreenStyleStateDialog(context, 'feeds'),
             child: Icon(Icons.more_vert_rounded, color: theme.primaryText, size: 24.dp),
           ),
         ],
@@ -62,7 +63,7 @@ class FeedScreen extends ConsumerWidget {
               child: Opacity(
                 opacity: 0.4,
                 child: Image.asset(
-                  displayState.backgroundImagePath,
+                  screenStyle.backgroundImage,
                   fit: BoxFit.cover,
                   cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 49.dp).cacheSize(context),
                   cacheWidth: Sizes.screenWidth.cacheSize(context),
@@ -134,8 +135,8 @@ class CommentListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
-    final FeedScreenDisplayState displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     myLogger.i('CommentListWidget is building...');
 

@@ -16,8 +16,8 @@ import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/models/feed_model.dart';
 import 'package:kronk/models/user_model.dart';
 import 'package:kronk/riverpod/feed/feed_card_state_provider.dart';
-import 'package:kronk/riverpod/feed/feed_screen_style_provider.dart';
 import 'package:kronk/riverpod/feed/timeline_provider.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/riverpod/general/video_controller_provider.dart';
 import 'package:kronk/screens/feed/feeds_screen.dart';
@@ -48,17 +48,17 @@ class FeedCard extends ConsumerWidget {
     final FeedModel feed = ref.watch(feedCardStateProvider(initialFeed));
     final FeedCardStateNotifier notifier = ref.read(feedCardStateProvider(initialFeed).notifier);
 
-    final displayState = ref.watch(feedsScreenStyleProvider);
-    final bool isFloating = displayState.screenStyle == LayoutStyle.floating;
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
     return VisibilityDetector(
       key: ValueKey('1-${feed.id}'),
       onVisibilityChanged: (info) async => await notifier.onVisibilityChanged(info: info),
       child: Card(
         elevation: 0,
         margin: const EdgeInsets.all(0),
-        color: theme.primaryBackground.withValues(alpha: displayState.cardOpacity),
+        color: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(isFloating ? displayState.cardBorderRadius : 0),
+          borderRadius: BorderRadius.circular(isFloating ? screenStyle.borderRadius : 0),
           side: isFloating ? BorderSide(color: theme.secondaryBackground, width: 0.5) : BorderSide.none,
         ),
         child: Padding(
@@ -619,7 +619,7 @@ class AddMediaWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final displayState = ref.watch(feedsScreenStyleProvider);
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
     return GestureDetector(
       onTap: () async {
         final picker = ImagePicker();
@@ -637,7 +637,7 @@ class AddMediaWidget extends ConsumerWidget {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(displayState.cardBorderRadius),
+          borderRadius: BorderRadius.circular(screenStyle.borderRadius),
           border: BoxBorder.all(color: theme.outline),
         ),
         width: double.infinity,
