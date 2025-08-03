@@ -32,7 +32,7 @@ class Storage {
       const Tuple3<String, bool, bool>('/cloud_storage', false, true),
       const Tuple3<String, bool, bool>('/vocabulary', false, false),
       const Tuple3<String, bool, bool>('/translator', false, true),
-      const Tuple3<String, bool, bool>('/jobs', false, false),
+      const Tuple3<String, bool, bool>('/jobs', false, true),
       const Tuple3<String, bool, bool>('/shop', false, true),
       const Tuple3<String, bool, bool>('/profile', false, false),
     ];
@@ -213,8 +213,8 @@ class Storage {
 
   ScreenStyleState getScreenStyleState({required String screenName}) {
     final String layoutStyle = settingsBox.get('${screenName}layoutStyle', defaultValue: LayoutStyle.floating.name);
-    final double opacity = settingsBox.get('${screenName}opacity', defaultValue: 12);
-    final double borderRadius = settingsBox.get('${screenName}borderRadius', defaultValue: 12);
+    final double opacity = settingsBox.get('${screenName}opacity', defaultValue: 1.0);
+    final double borderRadius = settingsBox.get('${screenName}borderRadius', defaultValue: 12.0);
     final String backgroundImage = settingsBox.get('${screenName}backgroundImage', defaultValue: 'assets/images/7.jpeg');
 
     return ScreenStyleState(

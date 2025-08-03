@@ -20,8 +20,8 @@ import 'package:kronk/screens/user/settings_screen.dart';
 import 'package:kronk/screens/user/todos_screen.dart';
 import 'package:kronk/screens/user/translator_screen.dart';
 import 'package:kronk/screens/user/verify_screen.dart';
-import 'package:kronk/screens/user/vocabularies_screen.dart';
 import 'package:kronk/screens/user/welcome_screen.dart';
+import 'package:kronk/screens/vocabulary/vocabularies_screen.dart';
 import 'package:kronk/widgets/image_cropper_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: '_rootNavigatorKey');
@@ -179,15 +179,18 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/vocabulary',
+                name: 'vocabulary',
                 pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const VocabulariesScreen()),
               ),
             ],
           ),
+
           StatefulShellBranch(
             navigatorKey: _translatorNavigatorKey,
             routes: [
               GoRoute(
                 path: '/translator',
+                name: 'translator',
                 pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const TranslatorScreen()),
               ),
             ],
@@ -199,6 +202,7 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: '/profile',
+                name: 'profile',
                 pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const ProfileScreen()),
                 routes: [
                   GoRoute(

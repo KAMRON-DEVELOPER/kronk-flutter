@@ -46,6 +46,8 @@ class SettingsScreen extends ConsumerWidget {
           const SectionLabelWidget(title: 'appearance'),
           const AppearanceSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
+          const SliverToBoxAdapter(child: TempToggle()),
+          SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
           const SectionLabelWidget(title: 'services', isServie: true),
           const ServicesSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
@@ -556,4 +558,58 @@ class BackButtonWidget extends ConsumerWidget {
       icon: Icon(Icons.arrow_back_rounded, color: theme.primaryText, size: 24.dp),
     );
   }
+}
+
+class TempToggle extends StatefulWidget {
+  const TempToggle({super.key});
+
+  @override
+  State<TempToggle> createState() => _TempToggleState();
+}
+
+class _TempToggleState extends State<TempToggle> {
+  bool isSelected = false;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ToggleButtons(
+          onPressed: (index) {
+            setState(() {
+              isSelected = !isSelected;
+            });
+          },
+          isSelected: [!isSelected, isSelected],
+          children: [const Icon(Icons.circle_outlined), const Icon(Icons.circle_rounded)],
+        ),
+
+        ElevatedButton(onPressed: () => showToast(context, 'This is message'), child: const Text('Show Toast')),
+      ],
+    );
+  }
+}
+
+void showToast(BuildContext context, String message) {
+  final overlay = Overlay.of(context);
+  final overlayEntry = OverlayEntry(
+    builder: (context) => Positioned(
+      bottom: 100,
+      left: 20,
+      right: 20,
+      child: Material(
+        color: Colors.transparent,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
+            child: Text(message, style: const TextStyle(color: Colors.white)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  overlay.insert(overlayEntry);
+
+  Future.delayed(const Duration(seconds: 2)).then((_) => overlayEntry.remove());
 }

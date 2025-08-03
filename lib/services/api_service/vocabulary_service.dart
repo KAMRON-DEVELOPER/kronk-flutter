@@ -39,7 +39,6 @@ class VocabularyService {
   Future<Tuple2<List<VocabularyModel>, int>> getVocabularies({int offset = 0, int limit = 20}) async {
     try {
       Response response = await _dio.get('', queryParameters: {'offset': offset, 'limit': limit});
-      myLogger.i('🚀 response.data in VocabularyModel: ${response.data}  statusCode: ${response.statusCode}');
       final data = response.data['vocabularies'] as List;
       final total = response.data['total'] as int;
       final vocabularies = data.map((json) => VocabularyModel.fromJson(json)).toList();

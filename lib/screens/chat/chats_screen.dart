@@ -171,7 +171,7 @@ class ChatListWidget extends ConsumerWidget {
             padding: EdgeInsets.all(isFloating ? 12.dp : 0),
             sliver: SliverList.separated(
               itemCount: chats.length,
-              separatorBuilder: (context, index) => SizedBox(height: 12.dp),
+              separatorBuilder: (context, index) => SizedBox(height: isFloating ? 12.dp : 0),
               itemBuilder: (context, index) => ChatTile(key: ValueKey(chats.elementAt(index).id), chat: chats.elementAt(index), isRefreshing: isRefreshing),
             ),
           ),

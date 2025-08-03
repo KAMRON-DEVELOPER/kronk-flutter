@@ -27,7 +27,7 @@ class NotesScreen extends ConsumerWidget {
           ),
         ),
         title: Text(
-          'Chats',
+          'Notes',
           style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 24, fontWeight: FontWeight.w600),
         ),
         actions: [

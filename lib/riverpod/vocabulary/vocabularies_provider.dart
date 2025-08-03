@@ -5,7 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:kronk/models/vocabulary_model.dart';
-import 'package:kronk/riverpod/general/connectivity_notifier_provider.dart';
 import 'package:kronk/services/api_service/vocabulary_service.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:mime/mime.dart';
@@ -37,11 +36,6 @@ class VocabulariesNotifier extends AutoDisposeAsyncNotifier<VocabulariesState> {
     ref.onCancel(() => myLogger.f('onCancel vocabulariesProvider'));
 
     try {
-      final bool isOnline = ref.read(connectivityProvider).value ?? false;
-      if (!isOnline) {
-        return const VocabulariesState(hasMore: false);
-      }
-
       final response = await _vocabularyService.getVocabularies(offset: 0, limit: _limit);
       _offset = response.item1.length;
 
