@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:kronk/bloc/authentication/authentication_bloc.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/models/user_model.dart';
 import 'package:kronk/services/api_service/user_service.dart';
 import 'package:kronk/utility/classes.dart';
+import 'package:kronk/utility/my_logger.dart';
 import 'package:tuple/tuple.dart';
 
 class Storage {
@@ -244,9 +246,24 @@ class Storage {
 
   Future<void> setThemeAsync({required Themes themeName}) async => await settingsBox.put('themeName', themeName.name);
 
-  Future<void> logOut() async {
-    await initializeNavbar(force: true);
+  Future<void> signOut() async {
     await userBox.clear();
     await settingsBox.clear();
+    myLogger.d(
+      'before enabled navbar items: ${navbarBox.values.map((e) {
+        if (e!.isEnabled) return e.route;
+      }).toList()}',
+    );
+    await initializeNavbar(force: true);
+    myLogger.d(
+      'after enabled navbar items: ${navbarBox.values.map((e) {
+        if (e!.isEnabled) return e.route;
+      }).toList()}',
+    );
+  }
+
+  Future<AuthProvider> getAuthProvider() async {
+    final authProvider = await settingsBox.get('authProvider', defaultValue: 'email');
+    return AuthProvider.values.byName(authProvider);
   }
 }

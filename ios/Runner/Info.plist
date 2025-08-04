@@ -53,9 +53,12 @@
 		<key>CFBundleURLTypes</key>
 		<array>
 		<dict>
+		    <key>CFBundleTypeRole</key>
+            <string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-			<string>com.googleusercontent.apps.1081239849482-2a38fjh12drhgrku9uat15c5l4bl0quh</string>
+			    <string>com.googleusercontent.apps.1081239849482-2a38fjh12drhgrku9uat15c5l4bl0quh</string>
+			    <string>uz.kronk.kronk</string>
 			</array>
 		</dict>
 		</array>

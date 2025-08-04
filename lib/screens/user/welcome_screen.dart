@@ -9,7 +9,9 @@ import 'package:kronk/riverpod/general/connectivity_notifier_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/widgets/my_toast.dart';
 import 'package:rive/rive.dart';
+import 'package:toastification/toastification.dart';
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -22,24 +24,10 @@ class WelcomeScreen extends ConsumerWidget {
       isOnline.when(
         data: (bool isOnline) {
           if (!isOnline) {
-            if (GoRouterState.of(context).path == '/welcome') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: theme.secondaryBackground,
-                  behavior: SnackBarBehavior.floating,
-                  dismissDirection: DismissDirection.horizontal,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                  margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                  content: Text(
-                    "Looks like you're offline! 🥺",
-                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                  ),
-                ),
-              );
-            }
-          } else {
-            context.push('/auth');
+            showToast(context, ref, ToastificationType.success, "Looks like you're offline! 🥺", showGlyph: false);
+            return;
           }
+          context.push('/auth');
         },
         loading: () {},
         error: (Object err, StackTrace stack) {},

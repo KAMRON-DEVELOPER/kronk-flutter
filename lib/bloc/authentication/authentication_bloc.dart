@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,13 +11,16 @@ import 'package:kronk/models/user_model.dart';
 import 'package:kronk/services/api_service/user_service.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'authentication_event.dart';
 import 'authentication_state.dart';
 
+enum AuthProvider { email, google, apple }
+
 class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> {
-  final UserService _authApiService = UserService();
-  final Storage _storage = Storage();
+  final UserService userService = UserService();
+  final Storage storage = Storage();
 
   AuthenticationBloc() : super(AuthInitial()) {
     on<RegisterSubmitEvent>(_registerSubmitEvent);
@@ -21,14 +28,17 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     on<LoginSubmitEvent>(_loginSubmitEvent);
     on<RequestForgotPasswordEvent>(_requestForgotPasswordEvent);
     on<ForgotPasswordEvent>(_forgotPasswordEvent);
-    on<SocialAuthEvent>(_googleAuthEvent);
+    on<GoogleAuthEvent>(_googleAuthEvent);
+    on<AppleAuthEvent>(_appleAuthEvent);
+    on<LogoutEvent>(_signOutEvent);
+    on<DeleteAccountEvent>(_deleteAccountEvent);
   }
 
   Future<void> _registerSubmitEvent(RegisterSubmitEvent event, Emitter<AuthenticationState> emit) async {
     emit(AuthLoading());
 
     try {
-      final Response response = await _authApiService.fetchRegister(data: event.registerData);
+      final Response response = await userService.fetchRegister(data: event.registerData);
 
       if (response.statusCode! >= 400) {
         emit(AuthFailure(failureMessage: response.data['details'] is List ? (response.data['details'] as List).join(', ') : response.data['details'].toString()));
@@ -36,7 +46,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       }
 
       myLogger.d('response.data: ${response.data}');
-      await _storage.setSettingsAllAsync({...response.data});
+      await storage.setSettingsAllAsync({...response.data});
       emit(RegisterSuccess());
     } catch (error) {
       emit(AuthFailure(failureMessage: error.toString()));
@@ -47,17 +57,16 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     emit(AuthLoading());
 
     try {
-      final Response response = await _authApiService.fetchVerify(code: event.code);
+      final Response response = await userService.fetchVerify(code: event.code);
 
       if (response.statusCode! >= 400) {
         emit(AuthFailure(failureMessage: response.data['details'] is List ? (response.data['details'] as List).join(', ') : response.data['details'].toString()));
         return;
       }
 
-      await _storage.deleteAsyncSettingsAll(keys: ['verify_token', 'verify_token_expiration_date']);
-
-      await _storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true});
-      await _storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
+      await storage.deleteAsyncSettingsAll(keys: ['verify_token', 'verify_token_expiration_date']);
+      await storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true, 'authProvider': AuthProvider.email.name});
+      await storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
 
       emit(VerifySuccess());
     } catch (e) {
@@ -69,7 +78,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     emit(AuthLoading());
 
     try {
-      final Response response = await _authApiService.fetchLogin(data: event.loginData);
+      final Response response = await userService.fetchLogin(data: event.loginData);
 
       myLogger.d('response.data: ${response.data}, type: ${response.data.runtimeType}');
 
@@ -78,10 +87,10 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
         return;
       }
 
-      await _storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true});
-      await _storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
+      await storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true, 'authProvider': AuthProvider.email.name});
+      await storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
 
-      final r = await _storage.getRefreshTokenAsync();
+      final r = await storage.getRefreshTokenAsync();
       myLogger.d('getRefreshTokenAsync: $r, type: ${r.runtimeType}');
       emit(LoginSuccess());
     } catch (error) {
@@ -93,7 +102,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     emit(AuthLoading());
 
     try {
-      final Response response = await _authApiService.fetchRequestForgotPassword(email: event.email);
+      final Response response = await userService.fetchRequestForgotPassword(email: event.email);
 
       if (response.statusCode! >= 400) {
         emit(AuthFailure(failureMessage: response.data['details'] is List ? (response.data['details'] as List).join(', ') : response.data['details'].toString()));
@@ -101,7 +110,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       }
 
       myLogger.d('response.data: ${response.data}');
-      await _storage.setSettingsAllAsync({...response.data});
+      await storage.setSettingsAllAsync({...response.data});
       emit(RequestForgotPasswordSuccess());
     } catch (error) {
       emit(AuthFailure(failureMessage: error.toString()));
@@ -112,7 +121,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     emit(AuthLoading());
 
     try {
-      final Response response = await _authApiService.fetchForgotPassword(data: event.forgotPasswordData);
+      final Response response = await userService.fetchForgotPassword(data: event.forgotPasswordData);
 
       if (response.statusCode! >= 400) {
         emit(AuthFailure(failureMessage: response.data['details'] is List ? (response.data['details'] as List).join(', ') : response.data['details'].toString()));
@@ -120,10 +129,10 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       }
 
       myLogger.d('response.data: ${response.data}');
-      await _storage.deleteAsyncSettingsAll(keys: ['forgot_password_token', 'forgot_password_token_expiration_date']);
+      await storage.deleteAsyncSettingsAll(keys: ['forgot_password_token', 'forgot_password_token_expiration_date']);
 
-      await _storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true});
-      await _storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
+      await storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true, 'authProvider': AuthProvider.email.name});
+      await storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
 
       emit(ForgotPasswordSuccess());
     } catch (error) {
@@ -131,7 +140,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
     }
   }
 
-  Future<void> _googleAuthEvent(SocialAuthEvent event, Emitter<AuthenticationState> emit) async {
+  Future<void> _googleAuthEvent(GoogleAuthEvent event, Emitter<AuthenticationState> emit) async {
     final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
 
     emit(AuthLoading());
@@ -140,35 +149,12 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       User? firebaseUser = firebaseAuth.currentUser;
 
       if (firebaseUser == null) {
-        myLogger.i('🤡 firebaseUser is null and we need to authenticate it.');
-
-        final bool supportsAuthenticate = googleSignIn.supportsAuthenticate();
-
-        myLogger.w('1 supportsAuthenticate: $supportsAuthenticate');
-        if (!supportsAuthenticate) {
-          myLogger.w('🥶 Google Sign-In not supported on this platform');
-          emit(const AuthFailure(failureMessage: 'Google Sign-In not supported'));
-          return;
-        }
-
-        // final GoogleSignInAuthorizationClient a = googleSignIn.authorizationClient;
-        // final GoogleSignInClientAuthorization? z = await a.authorizationForScopes([]);
-        // final GoogleSignInClientAuthorization x = await a.authorizeScopes([]);
-        // final GoogleSignInServerAuthorization? c = await a.authorizeServer([]);
-        // final googleSignInAccount = await googleSignIn.attemptLightweightAuthentication(reportAllExceptions: true);
-        //
-        // if (googleSignInAccount == null) {
-        //   myLogger.e('googleSignInAccount is null');
-        //   return;
-        // }
-
+        myLogger.i('🤡 firebaseUser is null');
         final GoogleSignInAccount googleSignInAccount = await googleSignIn.authenticate();
 
         final GoogleSignInAuthentication googleSignInAuthentication = googleSignInAccount.authentication;
-        myLogger.w('3 googleSignInAuthentication.idToken: ${googleSignInAuthentication.idToken}');
         final OAuthCredential oAuthCredential = GoogleAuthProvider.credential(idToken: googleSignInAuthentication.idToken);
 
-        // Sign in to Firebase with Google credentials
         final UserCredential userCredential = await firebaseAuth.signInWithCredential(oAuthCredential);
         firebaseUser = userCredential.user;
 
@@ -178,16 +164,13 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
         }
       }
 
-      String? firebaseUserIdToken = await firebaseUser.getIdToken();
+      String? idToken = await firebaseUser.getIdToken();
 
-      Response? response = await _authApiService.fetchGoogleAuth(firebaseUserIdToken: firebaseUserIdToken);
-      myLogger.w('7 response: $response');
+      Response? response = await userService.fetchSocialAuth(idToken: idToken);
 
-      if (response.statusCode! < 400) {
-        myLogger.i('🚀 social auth is success!: response.data: ${response.data}, runtimeType: ${response.data.runtimeType}');
-
-        await _storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true});
-        await _storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
+      if (response.statusCode == 200) {
+        await storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true, 'authProvider': AuthProvider.google.name});
+        await storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
 
         emit(GoogleAuthSuccess());
         return;
@@ -201,5 +184,145 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       myLogger.w('🥶 Google Sign-In Error: $e');
       emit(AuthFailure(failureMessage: '🥶 Google Sign-In Error: $e'));
     }
+  }
+
+  Future<void> _appleAuthEvent(AppleAuthEvent event, Emitter<AuthenticationState> emit) async {
+    final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+
+    emit(AuthLoading());
+
+    try {
+      User? firebaseUser = firebaseAuth.currentUser;
+      String? authorizationCode;
+
+      if (firebaseUser == null) {
+        myLogger.i('🤡 firebaseUser is null');
+        if (Platform.isAndroid) {
+          final appleProvider = AppleAuthProvider()
+            ..addScope('email')
+            ..addScope('name');
+
+          final UserCredential userCredential = await firebaseAuth.signInWithProvider(appleProvider);
+          authorizationCode = userCredential.additionalUserInfo?.authorizationCode;
+          myLogger.d('userCredential.user?.displayName: ${userCredential.user?.displayName}');
+          myLogger.d('userCredential.additionalUserInfo?.authorizationCode: ${userCredential.additionalUserInfo?.authorizationCode}');
+        } else {
+          final rawNonce = generateNonce();
+          final nonce = _sha256ofString(rawNonce);
+          final AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
+            scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+            nonce: nonce,
+          );
+
+          myLogger.d('Apple Credential: $credential');
+          myLogger.d('Email: ${credential.email}');
+          myLogger.d('authorizationCode: ${credential.authorizationCode}');
+
+          final OAuthProvider oAuthProvider = OAuthProvider('apple.com');
+          final OAuthCredential appleAuthCredential = oAuthProvider.credential(
+            idToken: credential.identityToken,
+            rawNonce: Platform.isIOS ? rawNonce : null,
+            accessToken: Platform.isIOS ? null : credential.authorizationCode,
+          );
+
+          final UserCredential userCredential = await firebaseAuth.signInWithCredential(appleAuthCredential);
+          authorizationCode = userCredential.additionalUserInfo?.authorizationCode;
+          myLogger.d('userCredential.user?.displayName: ${userCredential.user?.displayName}');
+          myLogger.d('userCredential.additionalUserInfo?.authorizationCode: ${userCredential.additionalUserInfo?.authorizationCode}');
+        }
+      }
+
+      final String? idToken = await firebaseUser?.getIdToken();
+      myLogger.d('idToken: $idToken');
+
+      Response? response = await userService.fetchSocialAuth(idToken: idToken, authorizationCode: authorizationCode);
+
+      if (response.statusCode == 200) {
+        await storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true, 'authProvider': AuthProvider.apple.name});
+        await storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
+
+        emit(AppleAuthSuccess());
+        return;
+      } else {
+        myLogger.w('🎃 social auth is failed!');
+        emit(const AuthFailure(failureMessage: '🥶 Server error occurred while social auth.'));
+      }
+    } on GoogleSignInException catch (e) {
+      myLogger.e('GoogleSignInException e: $e');
+      emit(AuthFailure(failureMessage: 'GoogleSignInException e: ${e.toString()}'));
+    } catch (e) {
+      myLogger.w('🥶 Google Sign In Error: $e');
+      emit(AuthFailure(failureMessage: '🥶 Google Sign In Error: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _signOutEvent(LogoutEvent event, Emitter<AuthenticationState> emit) async {
+    try {
+      final authProvider = await storage.getAuthProvider();
+
+      switch (authProvider) {
+        case AuthProvider.email:
+          await storage.signOut();
+          emit(SignOutSuccess());
+          break;
+        case AuthProvider.google:
+          await googleSignIn.signOut();
+          await FirebaseAuth.instance.signOut();
+          await storage.signOut();
+          emit(GoogleSignOutSuccess());
+          break;
+        case AuthProvider.apple:
+          await FirebaseAuth.instance.signOut();
+          // await FirebaseAuth.instance.revokeTokenWithAuthorizationCode(authorizationCode);
+          await storage.signOut();
+          emit(AppleSignOutSuccess());
+          break;
+      }
+    } catch (e) {
+      myLogger.w('Sign out failed, e: $e');
+      emit(AuthFailure(failureMessage: 'Sign out failed, e: $e'));
+    }
+  }
+
+  Future<void> _deleteAccountEvent(DeleteAccountEvent event, Emitter<AuthenticationState> emit) async {
+    try {
+      final authProvider = await storage.getAuthProvider();
+
+      final deleted = await userService.fetchDeleteProfile();
+
+      if (!deleted) {
+        emit(const AuthFailure(failureMessage: "We couldn't delete your account at the moment. Please try again later."));
+      }
+
+      switch (authProvider) {
+        case AuthProvider.email:
+          await storage.signOut();
+          emit(DeleteAccountSuccess());
+          break;
+        case AuthProvider.google:
+          await googleSignIn.disconnect();
+          await FirebaseAuth.instance.currentUser?.delete();
+          await storage.signOut();
+          emit(GoogleDeleteAccountSuccess());
+          break;
+        case AuthProvider.apple:
+          await FirebaseAuth.instance.currentUser?.delete();
+          await storage.signOut();
+          emit(AppleDeleteAccountSuccess());
+          break;
+      }
+    } on FirebaseAuthException catch (e) {
+      myLogger.w('FirebaseAuthException: $e');
+      emit(AuthFailure(failureMessage: 'FirebaseAuthException: $e'));
+    } catch (e) {
+      myLogger.w('Google Sign In Error: $e');
+      emit(AuthFailure(failureMessage: 'Google Sign In Error: $e'));
+    }
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 }

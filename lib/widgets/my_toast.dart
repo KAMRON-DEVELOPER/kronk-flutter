@@ -1,57 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/constants/my_theme.dart';
+import 'package:kronk/riverpod/general/theme_provider.dart';
+import 'package:kronk/utility/extensions.dart';
+import 'package:toastification/toastification.dart';
 
-enum ToastType { info, warning, error, serverError }
+final serverError = const ToastificationType.custom('serverError', Colors.red, Icons.error_outline_rounded);
 
-class MyToast {
-  static void showToast({required BuildContext context, required MyTheme activeTheme, required String message, required ToastType type, required Duration duration}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: activeTheme.secondaryBackground,
-        content: Text(
-          message,
-          style: TextStyle(color: getToastColor(type: type), fontSize: 16),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-        dismissDirection: DismissDirection.vertical,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.only(bottom: MediaQuery.of(context).size.height - 314, left: 16, right: 16),
-      ),
-    );
-  }
+ToastificationItem showToast(
+  BuildContext context,
+  WidgetRef ref,
+  ToastificationType type,
+  String message, {
+  Duration autoCloseDuration = const Duration(seconds: 3),
+  bool showGlyph = true,
+}) {
+  final theme = ref.read(themeProvider);
+  final foregroundColor = getForegroundColor(type: type, theme: theme);
+  final backgroundColor = getBackgroundColor(type: type, theme: theme);
+  final glyph = getGlyph(type: type);
 
-  static void removeToast({required BuildContext context}) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-  }
+  final titleText = showGlyph ? '$glyph $message' : message;
+
+  return toastification.show(
+    context: context,
+    type: type,
+    dragToClose: true,
+    applyBlurEffect: true,
+    style: ToastificationStyle.simple,
+    title: Text(titleText, maxLines: 10, overflow: TextOverflow.visible),
+    alignment: Alignment.topCenter,
+    backgroundColor: backgroundColor,
+    foregroundColor: foregroundColor,
+    autoCloseDuration: autoCloseDuration,
+    borderSide: BorderSide.none,
+    borderRadius: BorderRadius.circular(12.dp),
+    padding: EdgeInsets.symmetric(horizontal: 12.dp, vertical: 4.dp),
+    margin: EdgeInsets.symmetric(horizontal: 18.dp),
+    closeButton: const ToastCloseButton(showType: CloseButtonShowType.none),
+    animationBuilder: (context, animation, alignment, child) => FadeTransition(opacity: animation, child: child),
+    // animationBuilder: (context, animation, alignment, child) => ScaleTransition(scale: animation, child: child),
+  );
 }
 
-Color getToastColor({required ToastType type}) {
+Color getForegroundColor({required ToastificationType type, required MyTheme theme}) {
   switch (type) {
-    case ToastType.info:
-      return Colors.lightBlueAccent;
-    case ToastType.warning:
+    case ToastificationType.success:
+      return Colors.greenAccent;
+    case ToastificationType.info:
+      return theme.primaryText;
+    case ToastificationType.warning:
       return Colors.yellowAccent;
-    case ToastType.error:
+    case ToastificationType.error:
+      return Colors.deepOrangeAccent;
+    case _:
       return Colors.redAccent;
-    case ToastType.serverError:
-      return Colors.deepOrange;
   }
 }
 
-String getGlyph({required ToastType type}) {
+Color getBackgroundColor({required ToastificationType type, required MyTheme theme}) {
   switch (type) {
-    case ToastType.info:
-      return '🚀';
-    case ToastType.warning:
-      return '⚠️';
-    case ToastType.error:
-      return '🚨';
-    case ToastType.serverError:
-      return '🌋';
+    case ToastificationType.success:
+      return Colors.green;
+    case ToastificationType.info:
+      return theme.primaryText;
+    case ToastificationType.warning:
+      return Colors.yellow;
+    case ToastificationType.error:
+      return Colors.deepOrange;
+    case _:
+      return Colors.red;
   }
 }
 
-final String icons = '🤥 🤨 🤡 🤞 😎 🤏 🔄';
+String getGlyph({required ToastificationType type}) {
+  switch (type) {
+    case ToastificationType.success:
+      return '🎉 ';
+    case ToastificationType.info:
+      return '🚀 ';
+    case ToastificationType.warning:
+      return '⚠️ ';
+    case ToastificationType.error:
+      return '🚨 ';
+    case _:
+      return '🌋 ';
+  }
+}

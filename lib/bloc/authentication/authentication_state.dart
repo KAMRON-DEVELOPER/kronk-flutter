@@ -23,6 +23,20 @@ class RegisterSuccess extends AuthenticationState {}
 
 class GoogleAuthSuccess extends AuthenticationState {}
 
+class AppleAuthSuccess extends AuthenticationState {}
+
+class SignOutSuccess extends AuthenticationState {}
+
+class GoogleSignOutSuccess extends AuthenticationState {}
+
+class AppleSignOutSuccess extends AuthenticationState {}
+
+class DeleteAccountSuccess extends AuthenticationState {}
+
+class GoogleDeleteAccountSuccess extends AuthenticationState {}
+
+class AppleDeleteAccountSuccess extends AuthenticationState {}
+
 class AuthFailure extends AuthenticationState {
   final String? failureMessage;
 

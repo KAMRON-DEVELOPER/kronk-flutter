@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -29,13 +30,6 @@ Future<String> setup() async {
     }
   }
 
-  // try {
-  //   await getApplicationDocumentsDirectory();
-  // } catch (e, stack) {
-  //   myLogger.w('Exception while getting application directory, e: ${e.toString()}, stack: ${stack.toString()}');
-  //   rethrow;
-  // }
-
   try {
     await Hive.initFlutter();
   } catch (e, stack) {
@@ -52,6 +46,14 @@ Future<String> setup() async {
 
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
   } catch (e, stack) {
     myLogger.w('Exception while initializing Firebase, e: ${e.toString()}, stack: ${stack.toString()}');
     rethrow;
@@ -63,7 +65,6 @@ Future<String> setup() async {
     } else {
       await googleSignIn.initialize(serverClientId: constants.serverClientId);
     }
-    // await googleSignIn.initialize(clientId: constants.clientId, serverClientId: constants.serverClientId);
   } catch (e, stack) {
     myLogger.w('Exception while initializing googleSignIn, e: ${e.toString()}, stack: ${stack.toString()}');
     rethrow;

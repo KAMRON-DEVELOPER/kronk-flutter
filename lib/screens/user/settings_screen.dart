@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kronk/bloc/authentication/authentication_bloc.dart';
+import 'package:kronk/bloc/authentication/authentication_event.dart';
+import 'package:kronk/bloc/authentication/authentication_state.dart';
 import 'package:kronk/constants/my_theme.dart';
-import 'package:kronk/main.dart';
 import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/models/statistics_model.dart';
-import 'package:kronk/models/user_model.dart';
 import 'package:kronk/riverpod/general/navbar_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/riverpod/settings/settings_statistics.dart';
-import 'package:kronk/services/api_service/user_service.dart';
+import 'package:kronk/services/api_service/config_service.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:kronk/utility/url_launches.dart';
+import 'package:kronk/widgets/my_toast.dart';
 import 'package:kronk/widgets/profile/custom_painters.dart';
 import 'package:kronk/widgets/settings/custom_toggle.dart';
 import 'package:kronk/widgets/settings/stats_bar_chart.dart';
 import 'package:rive/rive.dart' hide LinearGradient;
+import 'package:toastification/toastification.dart';
 import 'package:vector_graphics/vector_graphics.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -46,15 +50,25 @@ class SettingsScreen extends ConsumerWidget {
           const SectionLabelWidget(title: 'appearance'),
           const AppearanceSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
-          const SliverToBoxAdapter(child: TempToggle()),
-          SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
           const SectionLabelWidget(title: 'services', isServie: true),
           const ServicesSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
           const SectionLabelWidget(title: 'statistics'),
           const StatisticsSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
-          const SectionLabelWidget(title: 'support'),
+          SliverToBoxAdapter(
+            child: FutureBuilder(
+              future: ConfigService.fetchShowSupportButtons(),
+              builder: (context, asyncSnapshot) {
+                if (asyncSnapshot.connectionState != ConnectionState.done) return const SizedBox.shrink();
+
+                final showSupport = asyncSnapshot.data ?? false;
+                if (!showSupport) return const SizedBox.shrink();
+
+                return const SectionLabelWidget(title: 'support');
+              },
+            ),
+          ),
           const SupportSectionWidget(),
           const MaraudersMapFootprints(),
           const DisappointingSectionWidget(),
@@ -65,48 +79,99 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 spacing: 8.dp,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      GestureDetector(
-                        onTap: () async {
-                          await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/privacy');
-                        },
-                        child: Text(
-                          'Privacy Policy',
-                          style: GoogleFonts.quicksand(
-                            color: theme.primaryText,
-                            fontSize: 18.dp,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                            decorationColor: theme.primaryText,
-                            decorationThickness: 1,
-                          ),
-                        ),
+                  /// Terms of Service
+                  GestureDetector(
+                    onTap: () async {
+                      await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/terms');
+                    },
+                    child: Text(
+                      'Terms of Service',
+                      style: GoogleFonts.quicksand(
+                        color: theme.primaryText,
+                        fontSize: 16.dp,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: theme.primaryText,
+                        decorationThickness: 1,
                       ),
+                    ),
+                  ),
 
-                      GestureDetector(
-                        onTap: () async {
-                          await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/terms');
-                        },
-                        child: Text(
-                          'Terms of Service',
-                          style: GoogleFonts.quicksand(
-                            color: theme.primaryText,
-                            fontSize: 18.dp,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                            decorationColor: theme.primaryText,
-                            decorationThickness: 1,
-                          ),
-                        ),
+                  /// Privacy Policy
+                  GestureDetector(
+                    onTap: () async {
+                      await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/privacy');
+                    },
+                    child: Text(
+                      'Privacy Policy',
+                      style: GoogleFonts.quicksand(
+                        color: theme.primaryText,
+                        fontSize: 16.dp,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: theme.primaryText,
+                        decorationThickness: 1,
                       ),
-                    ],
+                    ),
+                  ),
+
+                  /// Safety
+                  GestureDetector(
+                    onTap: () async {
+                      await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/safety');
+                    },
+                    child: Text(
+                      'Safety',
+                      style: GoogleFonts.quicksand(
+                        color: theme.primaryText,
+                        fontSize: 16.dp,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: theme.primaryText,
+                        decorationThickness: 1,
+                      ),
+                    ),
+                  ),
+
+                  /// Account Deletion
+                  GestureDetector(
+                    onTap: () async {
+                      await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/account-deletion-info');
+                    },
+                    child: Text(
+                      'Account Deletion',
+                      style: GoogleFonts.quicksand(
+                        color: theme.primaryText,
+                        fontSize: 16.dp,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: theme.primaryText,
+                        decorationThickness: 1,
+                      ),
+                    ),
+                  ),
+
+                  /// Support
+                  GestureDetector(
+                    onTap: () async {
+                      await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/support');
+                    },
+                    child: Text(
+                      'Support',
+                      style: GoogleFonts.quicksand(
+                        color: theme.primaryText,
+                        fontSize: 16.dp,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                        decorationColor: theme.primaryText,
+                        decorationThickness: 1,
+                      ),
+                    ),
                   ),
 
                   Text(
                     'version: 1.0.0 (beta)',
-                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 18.dp, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -388,46 +453,56 @@ class SupportSectionWidget extends ConsumerWidget {
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 16.dp),
       sliver: SliverToBoxAdapter(
-        child: Column(
-          spacing: 8.dp,
-          children: [
-            /// buymeacoffee
-            ElevatedButton(
-              onPressed: () async {
-                await customURLLauncher(isWebsite: true, url: 'https://buymeacoffee.com/kamronbek');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xffFFDD00),
-                fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-              ),
-              child: const VectorGraphic(loader: AssetBytesLoader('assets/svg/bmc-button.svg')),
-            ),
+        child: FutureBuilder(
+          future: ConfigService.fetchShowSupportButtons(),
+          builder: (context, asyncSnapshot) {
+            if (asyncSnapshot.connectionState != ConnectionState.done) return const SizedBox.shrink();
 
-            /// tirikchilik
-            ElevatedButton(
-              onPressed: () async {
-                await customURLLauncher(isWebsite: true, url: 'https://tirikchilik.uz/kamronbek');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-              ),
-              child: VectorGraphic(loader: const AssetBytesLoader('assets/svg/tirikchilik.svg'), height: 16.dp),
-            ),
+            final showSupport = asyncSnapshot.data ?? false;
+            if (!showSupport) return const SizedBox.shrink();
 
-            /// Motivational text
-            Text(
-              "Hey, I'm Kamronbek — the solo *junior* developer behind Kronk.\n\n"
-              'I built this app completely on my own, under constant pressure, with a lot of stress and family problems.\n\n'
-              'It was made in survival mode.\n\n'
-              "Now it's finally live — but keeping it online costs \$110 every month. I don’t have a steady income yet, and I can’t do this alone.\n\n"
-              'If you like the app, please help — sponsor, share, or just tell a friend.\n\n'
-              "Thanks for reading this far. You’re either really kind or really bored. Either way, you're part of it now.",
-              style: GoogleFonts.quicksand(color: theme.primaryText),
-            ),
-          ],
+            return Column(
+              spacing: 8.dp,
+              children: [
+                /// buy me a coffee
+                ElevatedButton(
+                  onPressed: () async {
+                    await customURLLauncher(isWebsite: true, url: 'https://buymeacoffee.com/kamronbek');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffFFDD00),
+                    fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
+                  ),
+                  child: const VectorGraphic(loader: AssetBytesLoader('assets/svg/bmc-button.svg')),
+                ),
+
+                /// tirikchilik
+                ElevatedButton(
+                  onPressed: () async {
+                    await customURLLauncher(isWebsite: true, url: 'https://tirikchilik.uz/kamronbek');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
+                  ),
+                  child: VectorGraphic(loader: const AssetBytesLoader('assets/svg/tirikchilik.svg'), height: 16.dp),
+                ),
+
+                /// Motivational text
+                Text(
+                  "Hey, I'm Kamronbek — the solo *junior* developer behind Kronk.\n\n"
+                  'I built this app completely on my own, under constant pressure, with a lot of stress and family problems.\n\n'
+                  'It was made in survival mode.\n\n'
+                  "Now it's finally live — but keeping it online costs \$110 every month. I don’t have a steady income yet, and I can’t do this alone.\n\n"
+                  'If you like the app, please help — sponsor, share, or just tell a friend.\n\n'
+                  "Thanks for reading this far. You’re either really kind or really bored. Either way, you're part of it now.",
+                  style: GoogleFonts.quicksand(color: theme.primaryText),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -443,73 +518,59 @@ class DisappointingSectionWidget extends ConsumerWidget {
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 12.dp),
       sliver: SliverToBoxAdapter(
-        child: Column(
-          spacing: 8.dp,
-          children: [
-            /// logout
-            ElevatedButton(
-              onPressed: () async {
-                final Storage storage = Storage();
-                await storage.logOut();
-                if (!context.mounted) return;
-                context.push('/welcome');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-              ),
-              child: Text(
-                'Log out',
-                style: GoogleFonts.quicksand(color: theme.primaryBackground, fontSize: 18.dp, fontWeight: FontWeight.w700),
-              ),
-            ),
+        child: BlocProvider(
+          create: (_) => AuthenticationBloc(),
+          child: BlocConsumer<AuthenticationBloc, AuthenticationState>(
+            listener: (context, state) {
+              if (state is SignOutSuccess) {
+                showToast(context, ref, ToastificationType.info, "You've been signed out");
+                ref.invalidate(navbarProvider);
+                context.go('/welcome');
+              } else if (state is GoogleSignOutSuccess) {
+                showToast(context, ref, ToastificationType.info, 'Signed out from your Google account');
+                ref.invalidate(navbarProvider);
+                context.go('/welcome');
+              } else if (state is AppleSignOutSuccess) {
+                showToast(context, ref, ToastificationType.info, 'Signed out from Apple. Your account has been revoked and unlinked');
+                ref.invalidate(navbarProvider);
+                context.go('/welcome');
+              }
+            },
+            builder: (context, state) {
+              return Column(
+                spacing: 8.dp,
+                children: [
+                  /// logout
+                  ElevatedButton(
+                    onPressed: () => context.read<AuthenticationBloc>().add(LogoutEvent()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
+                    ),
+                    child: Text(
+                      'Log out',
+                      style: GoogleFonts.quicksand(color: theme.primaryBackground, fontSize: 18.dp, fontWeight: FontWeight.w700),
+                    ),
+                  ),
 
-            /// Delete account
-            OutlinedButton(
-              onPressed: () async {
-                final Storage storage = Storage();
-                final UserService userService = UserService();
-                final UserModel? user = storage.getUser();
-                if (user == null) return;
-
-                try {
-                  final bool _ = await userService.fetchDeleteProfile();
-                } catch (error) {
-                  if (!context.mounted) return;
-                  if (GoRouterState.of(context).path == '/settings') {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: theme.secondaryBackground,
-                        behavior: SnackBarBehavior.floating,
-                        dismissDirection: DismissDirection.horizontal,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                        margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                        content: Text(
-                          error.toString(),
-                          style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                        ),
-                      ),
-                    );
-                  }
-                }
-
-                await storage.logOut();
-                googleSignIn.signOut();
-                if (!context.mounted) return;
-                context.push('/welcome');
-              },
-              style: OutlinedButton.styleFrom(
-                fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
-                side: BorderSide(color: Colors.redAccent, width: 2.dp),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-              ),
-              child: Text(
-                'Delete account',
-                style: GoogleFonts.quicksand(color: Colors.redAccent, fontSize: 18.dp, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
+                  /// Delete account
+                  OutlinedButton(
+                    onPressed: () => context.read<AuthenticationBloc>().add(DeleteAccountEvent()),
+                    style: OutlinedButton.styleFrom(
+                      fixedSize: Size(Sizes.screenWidth - 32.dp, 52.dp),
+                      side: BorderSide(color: Colors.redAccent, width: 2.dp),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
+                    ),
+                    child: Text(
+                      'Delete account',
+                      style: GoogleFonts.quicksand(color: Colors.redAccent, fontSize: 18.dp, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -558,58 +619,4 @@ class BackButtonWidget extends ConsumerWidget {
       icon: Icon(Icons.arrow_back_rounded, color: theme.primaryText, size: 24.dp),
     );
   }
-}
-
-class TempToggle extends StatefulWidget {
-  const TempToggle({super.key});
-
-  @override
-  State<TempToggle> createState() => _TempToggleState();
-}
-
-class _TempToggleState extends State<TempToggle> {
-  bool isSelected = false;
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ToggleButtons(
-          onPressed: (index) {
-            setState(() {
-              isSelected = !isSelected;
-            });
-          },
-          isSelected: [!isSelected, isSelected],
-          children: [const Icon(Icons.circle_outlined), const Icon(Icons.circle_rounded)],
-        ),
-
-        ElevatedButton(onPressed: () => showToast(context, 'This is message'), child: const Text('Show Toast')),
-      ],
-    );
-  }
-}
-
-void showToast(BuildContext context, String message) {
-  final overlay = Overlay.of(context);
-  final overlayEntry = OverlayEntry(
-    builder: (context) => Positioned(
-      bottom: 100,
-      left: 20,
-      right: 20,
-      child: Material(
-        color: Colors.transparent,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
-            child: Text(message, style: const TextStyle(color: Colors.white)),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  overlay.insert(overlayEntry);
-
-  Future.delayed(const Duration(seconds: 2)).then((_) => overlayEntry.remove());
 }

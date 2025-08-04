@@ -1,19 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/models/navbar_model.dart';
-import 'package:kronk/utility/storage.dart';
+import 'package:kronk/riverpod/general/storage_provider.dart';
 
 final navbarProvider = NotifierProvider<NavbarNotifier, List<NavbarModel>>(() => NavbarNotifier());
 
 class NavbarNotifier extends Notifier<List<NavbarModel>> {
-  late final Storage _storage;
-
   @override
   List<NavbarModel> build() {
-    _storage = Storage();
-    return _storage.getNavbarItems();
+    return ref.watch(storageProvider).getNavbarItems();
   }
 
   Future<void> toggleNavbarItem({required int index}) async {
+    final storage = ref.watch(storageProvider);
     List<NavbarModel> navbarItems = <NavbarModel>[...state];
     NavbarModel navbarItem = navbarItems.elementAt(index);
 
@@ -24,15 +22,21 @@ class NavbarNotifier extends Notifier<List<NavbarModel>> {
     }
     await navbarItem.save();
 
-    state = _storage.getNavbarItems();
+    state = storage.getNavbarItems();
   }
 
   Future<void> reorderNavbarItem({required int oldIndex, required int newIndex}) async {
+    final storage = ref.watch(storageProvider);
     List<NavbarModel> navbarItems = <NavbarModel>[...state];
     final NavbarModel reorderedItem = navbarItems.removeAt(oldIndex);
     navbarItems.insert(newIndex, reorderedItem);
     state = navbarItems;
 
-    await _storage.updateNavbarItemOrder(oldIndex: oldIndex, newIndex: newIndex);
+    await storage.updateNavbarItemOrder(oldIndex: oldIndex, newIndex: newIndex);
+  }
+
+  void resetNavbar() {
+    final storage = ref.watch(storageProvider);
+    state = storage.getNavbarItems();
   }
 }

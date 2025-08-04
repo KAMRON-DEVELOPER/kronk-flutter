@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +9,9 @@ import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/riverpod/general/connectivity_notifier_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/widgets/my_toast.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:toastification/toastification.dart';
 
 import '../../bloc/authentication/authentication_bloc.dart';
 import '../../bloc/authentication/authentication_event.dart';
@@ -53,31 +53,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final MyTheme theme = ref.watch(themeProvider);
     final AsyncValue<bool> isOnline = ref.watch(connectivityProvider);
 
-    isOnline.when(
-      data: (bool isOnline) => !isOnline ? Timer(const Duration(seconds: 5), () => context.go('/welcome')) : null,
-      error: (Object error, StackTrace stackTrace) {},
-      loading: () {},
-    );
-
     void onPressed() {
       isOnline.when(
         data: (bool isOnline) {
           if (!isOnline) {
-            if (GoRouterState.of(context).path == '/auth') {
-              return ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: theme.secondaryBackground,
-                  behavior: SnackBarBehavior.floating,
-                  dismissDirection: DismissDirection.horizontal,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                  margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                  content: Text(
-                    "Looks like you're offline! 🥺",
-                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                  ),
-                ),
-              );
-            }
+            showToast(context, ref, ToastificationType.success, "Looks like you're offline! 🥺", showGlyph: false);
+            context.push('/welcome');
+            return;
           }
 
           /// When online...
@@ -109,72 +91,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       listener: (BuildContext context, AuthenticationState state) {
         if (state is AuthLoading) {
         } else if (state is LoginSuccess) {
-          if (GoRouterState.of(context).path == '/auth') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: theme.secondaryBackground,
-                behavior: SnackBarBehavior.floating,
-                dismissDirection: DismissDirection.horizontal,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                content: Text(
-                  '🎉 You have logged in successfully',
-                  style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                ),
-              ),
-            );
-          }
-          Timer(const Duration(seconds: 4), () => context.go('/settings'));
+          showToast(context, ref, ToastificationType.success, 'You have logged in successfully');
+          context.go('/settings');
         } else if (state is RegisterSuccess) {
-          if (GoRouterState.of(context).path == '/auth') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: theme.secondaryBackground,
-                behavior: SnackBarBehavior.floating,
-                dismissDirection: DismissDirection.horizontal,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                content: Text(
-                  '🎉 You verification code sent.',
-                  style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                ),
-              ),
-            );
-          }
-          Timer(const Duration(seconds: 4), () => context.go('/auth/verify'));
+          showToast(context, ref, ToastificationType.success, 'You verification code sent');
+          context.go('/auth/verify');
         } else if (state is GoogleAuthSuccess) {
-          if (GoRouterState.of(context).path == '/auth') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: theme.secondaryBackground,
-                behavior: SnackBarBehavior.floating,
-                dismissDirection: DismissDirection.horizontal,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                content: Text(
-                  '🎉 You have logged in successfully by Google',
-                  style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                ),
-              ),
-            );
-          }
-          Timer(const Duration(seconds: 4), () => context.go('/settings'));
+          showToast(context, ref, ToastificationType.success, 'You have logged in successfully by Google');
+          context.go('/settings');
+        } else if (state is AppleAuthSuccess) {
+          showToast(context, ref, ToastificationType.success, 'You have logged in successfully by Apple');
+          context.go('/settings');
         } else if (state is AuthFailure) {
-          if (GoRouterState.of(context).path == '/auth') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: theme.secondaryBackground,
-                behavior: SnackBarBehavior.floating,
-                dismissDirection: DismissDirection.horizontal,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                content: Text(
-                  '🌋 ${state.failureMessage}',
-                  style: GoogleFonts.quicksand(color: Colors.redAccent, fontSize: 16.dp, height: 0),
-                ),
-              ),
-            );
-          }
+          showToast(context, ref, ToastificationType.error, '${state.failureMessage}');
         }
       },
       builder: (BuildContext context, AuthenticationState state) {
@@ -333,7 +262,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             fixedSize: Size.fromHeight(52.dp),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
                           ),
-                          onPressed: () => context.read<AuthenticationBloc>().add(SocialAuthEvent()),
+                          onPressed: () => context.read<AuthenticationBloc>().add(GoogleAuthEvent()),
                           child: Icon(IonIcons.logo_google, size: 28.dp, color: theme.primaryText),
                         ),
                       ),
@@ -344,7 +273,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             fixedSize: Size.fromHeight(52.dp),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
                           ),
-                          onPressed: () => context.read<AuthenticationBloc>().add(SocialAuthEvent()),
+                          onPressed: () => context.read<AuthenticationBloc>().add(AppleAuthEvent()),
                           child: Icon(IonIcons.logo_apple, size: 28.dp, color: theme.primaryText),
                         ),
                       ),

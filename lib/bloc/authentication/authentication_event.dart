@@ -52,4 +52,10 @@ class ForgotPasswordEvent extends AuthenticationEvent {
   List<Object> get props => [forgotPasswordData];
 }
 
-class SocialAuthEvent extends AuthenticationEvent {}
+class GoogleAuthEvent extends AuthenticationEvent {}
+
+class AppleAuthEvent extends AuthenticationEvent {}
+
+class LogoutEvent extends AuthenticationEvent {}
+
+class DeleteAccountEvent extends AuthenticationEvent {}

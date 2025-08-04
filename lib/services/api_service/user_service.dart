@@ -104,10 +104,9 @@ class UserService {
     }
   }
 
-  Future<Response> fetchGoogleAuth({required String? firebaseUserIdToken}) async {
+  Future<Response> fetchSocialAuth({String? idToken, String? authorizationCode}) async {
     try {
-      _dio.interceptors.add(FirebaseIdTokenInterceptor(firebaseIdToken: firebaseUserIdToken));
-      Response response = await _dio.post('/auth/social/google');
+      Response response = await _dio.post('/auth/social', queryParameters: {'id_token': idToken, 'authorization_code': authorizationCode});
       myLogger.i('🚀 response.data in fetchSocialAuth: ${response.data}  statusCode: ${response.statusCode}');
       return response;
     } catch (error) {
