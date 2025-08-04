@@ -227,6 +227,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
 
           final UserCredential userCredential = await firebaseAuth.signInWithCredential(appleAuthCredential);
           authorizationCode = userCredential.additionalUserInfo?.authorizationCode;
+          firebaseUser = userCredential.user;
           myLogger.d('userCredential.user?.displayName: ${userCredential.user?.displayName}');
           myLogger.d('userCredential.additionalUserInfo?.authorizationCode: ${userCredential.additionalUserInfo?.authorizationCode}');
         }
