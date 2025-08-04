@@ -48,6 +48,8 @@
 		<key>UIStatusBarHidden</key>
 		<false/>
 		<!-- CUSTOM -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>GIDClientID</key>
 		<string>1081239849482-2a38fjh12drhgrku9uat15c5l4bl0quh.apps.googleusercontent.com</string>
 		<key>CFBundleURLTypes</key>
