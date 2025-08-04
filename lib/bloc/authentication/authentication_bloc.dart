@@ -224,7 +224,8 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
           final OAuthCredential appleAuthCredential = oAuthProvider.credential(
             idToken: credential.identityToken,
             rawNonce: Platform.isIOS ? rawNonce : null,
-            accessToken: Platform.isIOS ? null : credential.authorizationCode,
+            accessToken: credential.authorizationCode,
+            // accessToken: Platform.isIOS ? null : credential.authorizationCode,
           );
 
           final UserCredential userCredential = await firebaseAuth.signInWithCredential(appleAuthCredential);
