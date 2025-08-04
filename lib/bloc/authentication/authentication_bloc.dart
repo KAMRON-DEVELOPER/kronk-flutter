@@ -214,9 +214,11 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
             nonce: nonce,
           );
 
-          myLogger.d('Apple Credential: $credential');
-          myLogger.d('Email: ${credential.email}');
-          myLogger.d('authorizationCode: ${credential.authorizationCode}');
+          myLogger.d('1 credential: $credential');
+          myLogger.d('2 credential.email: ${credential.email}');
+          myLogger.d('3 credential.givenName: ${credential.givenName}');
+          myLogger.d('4 credential.authorizationCode: ${credential.authorizationCode}');
+          myLogger.d('5 credential.identityToken: ${credential.identityToken}');
 
           final OAuthProvider oAuthProvider = OAuthProvider('apple.com');
           final OAuthCredential appleAuthCredential = oAuthProvider.credential(
