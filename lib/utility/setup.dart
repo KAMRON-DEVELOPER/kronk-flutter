@@ -10,7 +10,6 @@ import 'package:kronk/models/navbar_adapter.dart';
 import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/models/user_adapter.dart';
 import 'package:kronk/models/user_model.dart';
-import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
 // import 'package:path_provider/path_provider.dart';
@@ -60,7 +59,7 @@ Future<String> setup() async {
   }
 
   try {
-    await googleSignIn.initialize(clientId: constants.clientId);
+    await googleSignIn.initialize();
   } catch (e, stack) {
     myLogger.w('Exception while initializing googleSignIn, e: ${e.toString()}, stack: ${stack.toString()}');
     rethrow;
