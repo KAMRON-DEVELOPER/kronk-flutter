@@ -48,6 +48,10 @@
 		<key>UIStatusBarHidden</key>
 		<false/>
 		<!-- CUSTOM -->
+		<key>UIDeviceFamily</key>
+		<array>
+    		<integer>1</integer>
+		</array>
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
 		<key>GIDClientID</key>
