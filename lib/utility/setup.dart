@@ -60,11 +60,7 @@ Future<String> setup() async {
   }
 
   try {
-    if (kIsWeb) {
-      await googleSignIn.initialize(clientId: constants.clientId, serverClientId: constants.serverClientId);
-    } else {
-      await googleSignIn.initialize(serverClientId: constants.serverClientId);
-    }
+    await googleSignIn.initialize(clientId: constants.clientId);
   } catch (e, stack) {
     myLogger.w('Exception while initializing googleSignIn, e: ${e.toString()}, stack: ${stack.toString()}');
     rethrow;
