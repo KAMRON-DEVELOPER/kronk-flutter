@@ -182,7 +182,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       emit(const AuthFailure(failureMessage: 'Authentication cancelled by the user'));
     } catch (e) {
       myLogger.w('🥶 Google Sign-In Error: $e');
-      emit(AuthFailure(failureMessage: '🥶 Google Sign-In Error: $e'));
+      emit(const AuthFailure(failureMessage: '🥶 Something went wrong'));
     }
   }
 
@@ -253,10 +253,10 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       }
     } on GoogleSignInException catch (e) {
       myLogger.e('GoogleSignInException e: $e');
-      emit(AuthFailure(failureMessage: 'GoogleSignInException e: ${e.toString()}'));
+      emit(const AuthFailure(failureMessage: 'Google Sign In Error'));
     } catch (e) {
       myLogger.w('🥶 Google Sign In Error: $e');
-      emit(AuthFailure(failureMessage: '🥶 Google Sign In Error: ${e.toString()}'));
+      emit(const AuthFailure(failureMessage: '🥶 Something went wrong'));
     }
   }
 
@@ -284,7 +284,7 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
       }
     } catch (e) {
       myLogger.w('Sign out failed, e: $e');
-      emit(AuthFailure(failureMessage: 'Sign out failed, e: $e'));
+      emit(const AuthFailure(failureMessage: 'Sign out failed'));
     }
   }
 
