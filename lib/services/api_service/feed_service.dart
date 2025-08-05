@@ -155,4 +155,26 @@ class FeedService {
       rethrow;
     }
   }
+
+  Future<Map<String, bool>> reportStatuses({required String? feedId}) async {
+    try {
+      Response response = await _dio.get('/report-statuses', queryParameters: {'feed_id': feedId});
+      myLogger.i('🚀 response.data in reportStatuses: ${response.data}  statusCode: ${response.statusCode}');
+      return Map<String, bool>.from(response.data as Map);
+    } catch (error) {
+      myLogger.e('Error in reportStatuses: $error');
+      rethrow;
+    }
+  }
+
+  Future<bool> toggleReport({required String? feedId, required ReportReason reportReason}) async {
+    try {
+      Response response = await _dio.get('/toggle-report', queryParameters: {'feed_id': feedId, 'report_reason': reportReason.name});
+      myLogger.i('🚀 response.data in toggleReport: ${response.data}  statusCode: ${response.statusCode}');
+      return response.data['ok'] as bool;
+    } catch (error) {
+      myLogger.e('Error in toggleReport: $error');
+      rethrow;
+    }
+  }
 }

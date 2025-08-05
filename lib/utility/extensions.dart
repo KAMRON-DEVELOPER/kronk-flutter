@@ -62,13 +62,15 @@ extension StringExtensions on String {
     return split('_').map((word) => word.isEmpty ? '' : '${word[0].toUpperCase()}${word.substring(1)}').join(' ');
   }
 
+  String capitalize() {
+    return isEmpty ? '' : this[0].toUpperCase() + substring(1).replaceAll('_', ' ');
+  }
+
   String toSnakeCase() {
     return replaceAllMapped(RegExp(r'([a-z0-9])([A-Z])'), (match) => '${match.group(1)}_${match.group(2)}').toLowerCase();
   }
 }
 
-/// Extension methods on `num` to provide convenient unit conversions
-/// for screen scaling and pixel-aware caching.
 extension NumExtensions on num {
   /// Converts this number to a pixel value suitable for image caching,
   /// based on the current device's pixel ratio.

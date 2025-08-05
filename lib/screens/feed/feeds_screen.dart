@@ -262,6 +262,7 @@ class FeedListWidget extends ConsumerWidget {
               padding: EdgeInsets.all(isFloating ? 12.dp : 0),
               sliver: SliverList.separated(
                 itemCount: feeds.length,
+                addAutomaticKeepAlives: true,
                 separatorBuilder: (context, index) => SizedBox(height: 12.dp),
                 itemBuilder: (context, index) => FeedCard(key: ValueKey(feeds.elementAt(index).id), initialFeed: feeds.elementAt(index), isRefreshing: isRefreshing),
               ),

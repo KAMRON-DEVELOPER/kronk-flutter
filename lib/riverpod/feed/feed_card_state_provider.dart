@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/models/feed_model.dart';
 import 'package:kronk/services/api_service/feed_service.dart';
+import 'package:kronk/services/api_service/user_service.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:mime/mime.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -204,6 +205,59 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
       state = state.copyWith(engagement: engagement);
     } catch (error, _) {
       myLogger.e('catch in handleEngagement: ${error.toString()}');
+    }
+  }
+
+  // response = {"blocked": false, "symmetrical": false}
+  Future<Map<String, bool>> blockUserStatus({required String? blockedId}) async {
+    final userService = UserService();
+    try {
+      return await userService.blockUserStatus(blockedId: blockedId);
+    } catch (error) {
+      myLogger.e('catch in blockUserStatus: ${error.toString()}');
+      rethrow;
+    }
+  }
+
+  Future<bool> toggleBlockUser({required String? blockedId, bool symmetrical = false}) async {
+    final userService = UserService();
+    try {
+      return await userService.toggleBlockUser(blockedId: blockedId, symmetrical: symmetrical);
+    } catch (error) {
+      myLogger.e('catch in toggleBlockUser: ${error.toString()}');
+      rethrow;
+    }
+  }
+
+  // final response = {
+  //   "copyright_infringement": false,
+  //   "spam": false,
+  //   "nudity_or_sexual_content": false,
+  //   "misinformation": false,
+  //   "harassment_or_bullying": false,
+  //   "hate_speech": false,
+  //   "violence_or_threats": false,
+  //   "self_harm_or_suicide": false,
+  //   "impersonation": false,
+  //   "other": false
+  // }
+  Future<Map<String, bool>> reportStatuses({required String? feedId}) async {
+    final FeedService feedService = FeedService();
+    try {
+      return await feedService.reportStatuses(feedId: feedId);
+    } catch (error) {
+      myLogger.e('Error fetching report status for feed $feedId: $error');
+      rethrow;
+    }
+  }
+
+  Future<bool> toggleReport({required String? feedId, required ReportReason reportReason}) async {
+    final FeedService feedService = FeedService();
+    try {
+      return await feedService.toggleReport(feedId: feedId, reportReason: reportReason);
+    } catch (error) {
+      myLogger.e('catch in toggleReport: ${error.toString()}');
+      rethrow;
     }
   }
 }

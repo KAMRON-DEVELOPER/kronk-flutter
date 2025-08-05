@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,9 +10,12 @@ import 'package:kronk/riverpod/general/connectivity_notifier_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/utility/url_launches.dart';
 import 'package:kronk/widgets/my_toast.dart';
 import 'package:rive/rive.dart';
 import 'package:toastification/toastification.dart';
+
+final termsAcceptedProvider = StateProvider<bool>((ref) => false);
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -19,7 +23,9 @@ class WelcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
+    final termsAccepted = ref.watch(termsAcceptedProvider);
     final AsyncValue<bool> isOnline = ref.watch(connectivityProvider);
+
     void onPressed() {
       isOnline.when(
         data: (bool isOnline) {
@@ -27,6 +33,12 @@ class WelcomeScreen extends ConsumerWidget {
             showToast(context, ref, ToastificationType.success, "Looks like you're offline! 🥺", showGlyph: false);
             return;
           }
+
+          if (!termsAccepted) {
+            showToast(context, ref, ToastificationType.warning, 'You must accept the Terms of Service to continue.');
+            return;
+          }
+
           context.push('/auth');
         },
         loading: () {},
@@ -78,18 +90,62 @@ class WelcomeScreen extends ConsumerWidget {
                   ),
                   SizedBox(height: 8.dp),
                   TextButton(
-                    onPressed: () => context.push('/settings'),
+                    onPressed: () {
+                      if (!termsAccepted) {
+                        showToast(context, ref, ToastificationType.warning, 'You must accept the Terms of Service to continue.');
+                        return;
+                      }
+
+                      context.push('/settings');
+                    },
                     child: Text(
                       'Set up later',
                       style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 18.dp, fontWeight: FontWeight.w700),
                     ),
                   ),
+
+                  /// TermsAcceptanceWidget
+                  const TermsAcceptanceWidget(),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class TermsAcceptanceWidget extends ConsumerWidget {
+  const TermsAcceptanceWidget({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final MyTheme theme = ref.watch(themeProvider);
+    final termsAccepted = ref.watch(termsAcceptedProvider);
+    return Row(
+      children: [
+        Checkbox(value: termsAccepted, onChanged: (bool? value) => ref.read(termsAcceptedProvider.notifier).state = !termsAccepted),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: GoogleFonts.quicksand(color: theme.primaryText),
+              children: [
+                const TextSpan(text: 'By continuing, I agree to the '),
+                TextSpan(
+                  text: 'Terms of Service',
+                  style: const TextStyle(decoration: TextDecoration.underline),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () async {
+                      await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/terms');
+                    },
+                ),
+                const TextSpan(text: '. I understand that Kronk does not allow abusive, harmful, or inappropriate content.'),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

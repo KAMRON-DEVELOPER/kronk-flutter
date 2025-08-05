@@ -280,79 +280,140 @@ class FeedCardMenuButton extends ConsumerWidget {
           onTap: () {
             final Storage storage = Storage();
             final UserModel? user = storage.getUser();
-            if (feed.feedMode == FeedMode.create || feed.author.id != user?.id) return;
-            showModalBottomSheet(
-              context: context,
-              backgroundColor: theme.secondaryBackground,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
-              builder: (context) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      splashColor: Colors.red,
-                      iconColor: theme.primaryText,
-                      titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                      subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                      leading: const Icon(Icons.flag_rounded),
-                      title: const Text('Edit'),
-                      // subtitle: const Text('subtitle'),
-                      onTap: () {
-                        notifier.updateField(feed: feed.copyWith(feedMode: FeedMode.edit));
-                        context.pop();
-                      },
-                    ),
-                    ListTile(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      iconColor: theme.primaryText,
-                      titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                      subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                      leading: const Icon(Icons.delete_outline_rounded),
-                      title: const Text('Delete'),
-                      // subtitle: const Text('subtitle'),
-                      onTap: () async {
-                        final communityServices = FeedService();
-                        try {
-                          final bool ok = await communityServices.fetchDeleteFeed(feedId: feed.id);
-                          myLogger.d('ok: $ok');
-                          if (ok) {
-                            final timelineType = switch (tabIndex) {
-                              0 => TimelineType.discover,
-                              1 => TimelineType.following,
-                              _ => TimelineType.discover,
-                            };
-                            ref.read(timelineNotifierProvider(timelineType).notifier).refresh(timelineType: timelineType);
-                          }
-                          if (!context.mounted) return;
-                          context.pop();
-                        } catch (error) {
-                          String errorMessage;
-                          if (error is List) {
-                            errorMessage = error.join(', ');
-                          } else if (error is Exception && error.toString().startsWith('Exception: [')) {
-                            // Extract inner list string from Exception string: "Exception: [msg1, msg2]"
-                            errorMessage = error.toString().replaceFirst('Exception: [', '').replaceFirst(']', '');
-                          } else {
-                            errorMessage = error.toString();
-                          }
+            if (feed.feedMode == FeedMode.create) return;
 
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: theme.tertiaryBackground,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                              content: Text(errorMessage, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.redAccent)),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
+            if (feed.author.id == user?.id) {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: theme.secondaryBackground,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
+                builder: (context) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        splashColor: Colors.red,
+                        iconColor: theme.primaryText,
+                        titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                        subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                        leading: const Icon(Icons.flag_rounded),
+                        title: const Text('Edit'),
+                        // subtitle: const Text('subtitle'),
+                        onTap: () {
+                          notifier.updateField(feed: feed.copyWith(feedMode: FeedMode.edit));
+                          context.pop();
+                        },
+                      ),
+                      ListTile(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        iconColor: theme.primaryText,
+                        titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                        subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                        leading: const Icon(Icons.delete_outline_rounded),
+                        title: const Text('Delete'),
+                        // subtitle: const Text('subtitle'),
+                        onTap: () async {
+                          final communityServices = FeedService();
+                          try {
+                            final bool ok = await communityServices.fetchDeleteFeed(feedId: feed.id);
+                            myLogger.d('ok: $ok');
+                            if (ok) {
+                              final timelineType = switch (tabIndex) {
+                                0 => TimelineType.discover,
+                                1 => TimelineType.following,
+                                _ => TimelineType.discover,
+                              };
+                              ref.read(timelineNotifierProvider(timelineType).notifier).refresh(timelineType: timelineType);
+                            }
+                            if (!context.mounted) return;
+                            context.pop();
+                          } catch (error) {
+                            String errorMessage;
+                            if (error is List) {
+                              errorMessage = error.join(', ');
+                            } else if (error is Exception && error.toString().startsWith('Exception: [')) {
+                              // Extract inner list string from Exception string: "Exception: [msg1, msg2]"
+                              errorMessage = error.toString().replaceFirst('Exception: [', '').replaceFirst(']', '');
+                            } else {
+                              errorMessage = error.toString();
+                            }
+
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: theme.tertiaryBackground,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
+                                content: Text(errorMessage, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.redAccent)),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            } else {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: theme.secondaryBackground,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
+                builder: (context) {
+                  return FutureBuilder(
+                    future: Future.wait([notifier.blockUserStatus(blockedId: feed.author.id), notifier.reportStatuses(feedId: feed.id)]),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        return ListTile(title: const Text('Error loading options'), subtitle: Text(snapshot.error.toString()));
+                      }
+
+                      final blockStatus = snapshot.data![0];
+                      final reportStatus = snapshot.data![1];
+
+                      final bool isBlocked = blockStatus['blocked'] ?? false;
+                      final bool isSymmetrical = blockStatus['symmetrical'] ?? false;
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            leading: Icon(isBlocked ? Icons.block : Icons.block_outlined),
+                            title: Text(isBlocked ? 'Unblock user' : 'Block user'),
+                            subtitle: isBlocked && isSymmetrical
+                                ? const Text('You both blocked each other')
+                                : isBlocked
+                                ? const Text('You blocked this user')
+                                : null,
+                            onTap: () async {
+                              await notifier.toggleBlockUser(blockedId: feed.author.id, symmetrical: isSymmetrical);
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                          ),
+                          const Divider(),
+                          ...reportStatus.entries.map((entry) {
+                            final reason = entry.key;
+                            final isReported = entry.value;
+                            return CheckboxListTile(
+                              title: Text(reason.replaceAll('_', ' ').capitalize()),
+                              value: isReported,
+                              onChanged: (_) async {
+                                await notifier.toggleReport(feedId: feed.id, reportReason: ReportReason.values.byName(reason));
+                                if (context.mounted) Navigator.pop(context);
+                              },
+                            );
+                          }),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            }
           },
         ),
       ],

@@ -219,4 +219,26 @@ class UserService {
       rethrow;
     }
   }
+
+  Future<Map<String, bool>> blockUserStatus({required String? blockedId}) async {
+    try {
+      Response response = await _dio.get('/block-user-status', queryParameters: {'blocked_id': blockedId});
+      myLogger.i('🚀 response.data in blockUserStatus: ${response.data}  statusCode: ${response.statusCode}');
+      return Map<String, bool>.from(response.data);
+    } catch (error) {
+      myLogger.e('Error in blockUserStatus in user service: $error');
+      rethrow;
+    }
+  }
+
+  Future<bool> toggleBlockUser({required String? blockedId, bool symmetrical = false}) async {
+    try {
+      Response response = await _dio.get('/toggle-block-user', queryParameters: {'blocked_id': blockedId, 'symmetrical': symmetrical});
+      myLogger.i('🚀 response.data in toggleBlockUser: ${response.data}  statusCode: ${response.statusCode}');
+      return response.data['ok'] as bool;
+    } catch (error) {
+      myLogger.e('Error in toggleBlockUser: $error');
+      rethrow;
+    }
+  }
 }
