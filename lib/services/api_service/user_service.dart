@@ -222,6 +222,7 @@ class UserService {
 
   Future<Map<String, bool>> blockUserStatus({required String? blockedId}) async {
     try {
+      _dio.interceptors.add(AccessTokenInterceptor());
       Response response = await _dio.get('/block-user-status', queryParameters: {'blocked_id': blockedId});
       myLogger.i('🚀 response.data in blockUserStatus: ${response.data}  statusCode: ${response.statusCode}');
       return Map<String, bool>.from(response.data);
@@ -233,7 +234,8 @@ class UserService {
 
   Future<bool> toggleBlockUser({required String? blockedId, bool symmetrical = false}) async {
     try {
-      Response response = await _dio.get('/toggle-block-user', queryParameters: {'blocked_id': blockedId, 'symmetrical': symmetrical});
+      _dio.interceptors.add(AccessTokenInterceptor());
+      Response response = await _dio.post('/toggle-block-user', queryParameters: {'blocked_id': blockedId, 'symmetrical': symmetrical});
       myLogger.i('🚀 response.data in toggleBlockUser: ${response.data}  statusCode: ${response.statusCode}');
       return response.data['ok'] as bool;
     } catch (error) {

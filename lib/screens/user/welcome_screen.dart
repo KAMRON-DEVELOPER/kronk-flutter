@@ -104,7 +104,7 @@ class WelcomeScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  /// TermsAcceptanceWidget
+                  SizedBox(height: 8.dp),
                   const TermsAcceptanceWidget(),
                 ],
               ),
@@ -123,26 +123,41 @@ class TermsAcceptanceWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
     final termsAccepted = ref.watch(termsAcceptedProvider);
+
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Checkbox(value: termsAccepted, onChanged: (bool? value) => ref.read(termsAcceptedProvider.notifier).state = !termsAccepted),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: GoogleFonts.quicksand(color: theme.primaryText),
+        Transform.scale(
+          scale: 0.85,
+          child: Checkbox(
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            checkColor: theme.primaryText,
+            activeColor: theme.secondaryText,
+            side: BorderSide(color: theme.secondaryText),
+            value: termsAccepted,
+            onChanged: (value) => ref.read(termsAcceptedProvider.notifier).state = value ?? false,
+          ),
+        ),
+        Flexible(
+          child: Text.rich(
+            TextSpan(
+              style: GoogleFonts.quicksand(color: theme.secondaryText, decorationColor: theme.secondaryText, fontSize: 14),
               children: [
-                const TextSpan(text: 'By continuing, I agree to the '),
+                const TextSpan(text: 'I agree to the '),
                 TextSpan(
-                  text: 'Terms of Service',
-                  style: const TextStyle(decoration: TextDecoration.underline),
+                  text: 'Terms',
+                  style: const TextStyle(decoration: TextDecoration.underline, fontWeight: FontWeight.w600),
                   recognizer: TapGestureRecognizer()
                     ..onTap = () async {
                       await customURLLauncher(isWebsite: true, url: 'https://api.kronk.uz/terms');
                     },
                 ),
-                const TextSpan(text: '. I understand that Kronk does not allow abusive, harmful, or inappropriate content.'),
+                const TextSpan(text: ' of Kronk.'),
               ],
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

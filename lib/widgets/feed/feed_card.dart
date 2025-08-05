@@ -356,60 +356,60 @@ class FeedCardMenuButton extends ConsumerWidget {
                 },
               );
             } else {
+              final future = Future.wait([notifier.blockUserStatus(blockedId: feed.author.id), notifier.reportStatuses(feedId: feed.id)]);
               showModalBottomSheet(
                 context: context,
                 backgroundColor: theme.secondaryBackground,
+                isScrollControlled: true,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
                 builder: (context) {
-                  return FutureBuilder(
-                    future: Future.wait([notifier.blockUserStatus(blockedId: feed.author.id), notifier.reportStatuses(feedId: feed.id)]),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator());
-                      }
-
-                      if (snapshot.hasError) {
-                        return ListTile(title: const Text('Error loading options'), subtitle: Text(snapshot.error.toString()));
-                      }
-
-                      final blockStatus = snapshot.data![0];
-                      final reportStatus = snapshot.data![1];
-
-                      final bool isBlocked = blockStatus['blocked'] ?? false;
-                      final bool isSymmetrical = blockStatus['symmetrical'] ?? false;
-
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: Icon(isBlocked ? Icons.block : Icons.block_outlined),
-                            title: Text(isBlocked ? 'Unblock user' : 'Block user'),
-                            subtitle: isBlocked && isSymmetrical
-                                ? const Text('You both blocked each other')
-                                : isBlocked
-                                ? const Text('You blocked this user')
-                                : null,
-                            onTap: () async {
-                              await notifier.toggleBlockUser(blockedId: feed.author.id, symmetrical: isSymmetrical);
-                              if (context.mounted) Navigator.pop(context);
+                  return Padding(
+                    padding: MediaQuery.of(context).viewInsets,
+                    child: FutureBuilder(
+                      future: future,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return BlockUserAndReportWidget(
+                            isBlocked: false,
+                            isSymmetrical: false,
+                            reportStatus: {
+                              'copyright_infringement': false,
+                              'spam': false,
+                              'nudity_or_sexual_content': false,
+                              'misinformation': false,
+                              'harassment_or_bullying': false,
+                              'hate_speech': false,
+                              'violence_or_threats': false,
+                              'self_harm_or_suicide': false,
+                              'impersonation': false,
+                              'other': false,
                             },
-                          ),
-                          const Divider(),
-                          ...reportStatus.entries.map((entry) {
-                            final reason = entry.key;
-                            final isReported = entry.value;
-                            return CheckboxListTile(
-                              title: Text(reason.replaceAll('_', ' ').capitalize()),
-                              value: isReported,
-                              onChanged: (_) async {
-                                await notifier.toggleReport(feedId: feed.id, reportReason: ReportReason.values.byName(reason));
-                                if (context.mounted) Navigator.pop(context);
-                              },
-                            );
-                          }),
-                        ],
-                      );
-                    },
+                            authorId: feed.author.id,
+                            feedId: feed.id,
+                            notifier: notifier,
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return ListTile(title: const Text('Error loading options'), subtitle: Text(snapshot.error.toString()));
+                        }
+
+                        final blockStatus = snapshot.data![0];
+                        final reportStatus = snapshot.data![1];
+
+                        final bool isBlocked = blockStatus['blocked'] ?? false;
+                        final bool isSymmetrical = blockStatus['symmetrical'] ?? false;
+
+                        return BlockUserAndReportWidget(
+                          isBlocked: isBlocked,
+                          isSymmetrical: isSymmetrical,
+                          reportStatus: reportStatus,
+                          authorId: feed.author.id,
+                          feedId: feed.id,
+                          notifier: notifier,
+                        );
+                      },
+                    ),
                   );
                 },
               );
@@ -417,6 +417,84 @@ class FeedCardMenuButton extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// BlockUserAndReportWidget
+class BlockUserAndReportWidget extends ConsumerWidget {
+  final bool isBlocked;
+  final bool isSymmetrical;
+  final Map<String, bool> reportStatus;
+  final String? authorId;
+  final String? feedId;
+  final FeedCardStateNotifier notifier;
+
+  const BlockUserAndReportWidget({
+    super.key,
+    required this.isBlocked,
+    required this.isSymmetrical,
+    required this.reportStatus,
+    required this.authorId,
+    required this.feedId,
+    required this.notifier,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(isBlocked ? Icons.block : Icons.block_outlined, size: 16.dp, color: isBlocked || isSymmetrical ? theme.primaryText : theme.secondaryText),
+              title: Text(
+                isBlocked ? 'Unblock user' : 'Block user',
+                style: GoogleFonts.quicksand(color: isBlocked ? theme.primaryText : theme.secondaryText, fontSize: 16.dp),
+              ),
+              subtitle: isBlocked && isSymmetrical
+                  ? Text(
+                      'You both blocked each other',
+                      style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 12.dp),
+                    )
+                  : isBlocked
+                  ? Text(
+                      'You blocked this user',
+                      style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 12.dp),
+                    )
+                  : null,
+              onTap: () async {
+                await notifier.toggleBlockUser(blockedId: authorId, symmetrical: isSymmetrical);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
+            Divider(color: theme.outline),
+            ...reportStatus.entries.map((entry) {
+              final reason = entry.key;
+              final isReported = entry.value;
+              return CheckboxListTile(
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                checkColor: theme.primaryText,
+                activeColor: theme.secondaryText,
+                side: BorderSide(color: theme.secondaryText),
+                title: Text(
+                  reason.replaceAll('_', ' ').capitalize(),
+                  style: GoogleFonts.quicksand(color: isReported ? theme.primaryText : theme.secondaryText, fontSize: 16.dp),
+                ),
+                value: isReported,
+                onChanged: (_) async {
+                  await notifier.toggleReport(feedId: feedId, reportReason: ReportReason.values.byName(reason));
+                  if (context.mounted) Navigator.pop(context);
+                },
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 }

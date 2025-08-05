@@ -169,7 +169,7 @@ class FeedService {
 
   Future<bool> toggleReport({required String? feedId, required ReportReason reportReason}) async {
     try {
-      Response response = await _dio.get('/toggle-report', queryParameters: {'feed_id': feedId, 'report_reason': reportReason.name});
+      Response response = await _dio.post('/toggle-report', queryParameters: {'feed_id': feedId, 'report_reason': reportReason.name});
       myLogger.i('🚀 response.data in toggleReport: ${response.data}  statusCode: ${response.statusCode}');
       return response.data['ok'] as bool;
     } catch (error) {
