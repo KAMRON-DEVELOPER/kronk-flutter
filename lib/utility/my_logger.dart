@@ -1,3 +1,4 @@
+import 'package:kronk/utility/constants.dart';
 import 'package:logger/logger.dart';
 
 // ANSI color codes
@@ -43,4 +44,4 @@ class SimplePrinter extends LogPrinter {
   }
 }
 
-final myLogger = Logger(printer: SimplePrinter(), level: Level.trace);
+final myLogger = Logger(printer: SimplePrinter(), level: constants.devMode ? Level.trace : Level.error);
