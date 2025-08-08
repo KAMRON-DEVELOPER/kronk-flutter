@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,7 @@ import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/exceptions.dart';
 import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_drawer.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
@@ -64,39 +67,32 @@ class FeedsScreen extends ConsumerWidget {
                     ),
                   ),
 
+                /// TabBarView
                 const TabBarView(
                   children: [
                     TimelineTab(timelineType: TimelineType.discover),
                     TimelineTab(timelineType: TimelineType.following),
                   ],
                 ),
+
+                /// FloatingActionButton
+                Positioned(
+                  right: 10.dp,
+                  bottom: 10.dp,
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      try {
+                        final currentIndex = ref.read(feedsScreenTabIndexProvider);
+                        final currentTimeline = currentIndex == 0 ? TimelineType.discover : TimelineType.following;
+                        ref.read(timelineNotifierProvider(currentTimeline).notifier).createFeed();
+                      } catch (error) {
+                        myLogger.w('catch while adding feed creating card, e" $e');
+                      }
+                    },
+                    child: const Icon(Icons.add_rounded),
+                  ),
+                ),
               ],
-            ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () {
-                try {
-                  final currentIndex = ref.read(feedsScreenTabIndexProvider);
-                  final currentTimeline = currentIndex == 0 ? TimelineType.discover : TimelineType.following;
-                  ref.read(timelineNotifierProvider(currentTimeline).notifier).createFeed();
-                } catch (error) {
-                  if (GoRouterState.of(context).path == '/feeds') {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: theme.secondaryBackground,
-                        behavior: SnackBarBehavior.floating,
-                        dismissDirection: DismissDirection.horizontal,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                        margin: EdgeInsets.only(left: 28.dp, right: 28.dp, bottom: Sizes.screenHeight - 96.dp),
-                        content: Text(
-                          'Failed to create feed: $error',
-                          style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, height: 0),
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Icon(Icons.add_rounded),
             ),
             bottomNavigationBar: const Navbar(),
             drawer: const CustomDrawer(),

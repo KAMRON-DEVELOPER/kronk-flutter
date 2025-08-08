@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/riverpod/general/video_overlay_provider.dart';
@@ -11,7 +10,6 @@ import 'package:video_player/video_player.dart';
 final videoControllerProvider = AutoDisposeAsyncNotifierProviderFamily<VideoControllerNotifier, VideoPlayerController, VideoSourceState>(VideoControllerNotifier.new);
 
 class VideoControllerNotifier extends AutoDisposeFamilyAsyncNotifier<VideoPlayerController, VideoSourceState> {
-  late final VoidCallback _controllerListener;
   late final VideoSourceState _videoSource;
 
   @override
@@ -23,18 +21,18 @@ class VideoControllerNotifier extends AutoDisposeFamilyAsyncNotifier<VideoPlayer
 
     await controller.initialize();
 
-    _controllerListener = () {
+    void controllerListener() {
       if (controller.value.position >= controller.value.duration - const Duration(milliseconds: 500)) {
         ref.read(videoOverlayStateProvider(_videoSource.feedId).notifier).whenCompleted();
       }
-    };
+    }
 
     ref.onDispose(() {
-      controller.removeListener(_controllerListener);
+      controller.removeListener(controllerListener);
       controller.dispose();
     });
 
-    controller.addListener(_controllerListener);
+    controller.addListener(controllerListener);
 
     return controller;
   }

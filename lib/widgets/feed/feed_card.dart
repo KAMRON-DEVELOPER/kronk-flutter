@@ -31,6 +31,7 @@ import 'package:kronk/utility/storage.dart';
 import 'package:kronk/widgets/feed/feed_video_error_widget.dart';
 import 'package:kronk/widgets/feed/feed_video_shimmer_widget.dart';
 import 'package:kronk/widgets/feed/video_overlay_widget.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mime/mime.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -50,6 +51,7 @@ class FeedCard extends ConsumerWidget {
 
     final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
     final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
+    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
     return VisibilityDetector(
       key: ValueKey('1-${feed.id}'),
       onVisibilityChanged: (info) async => await notifier.onVisibilityChanged(info: info),
@@ -67,14 +69,87 @@ class FeedCard extends ConsumerWidget {
             spacing: 8.dp,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FeedHeaderSection(feed: feed, isRefreshing: isRefreshing, notifier: notifier),
+              FeedHeaderSection(feed: feed, notifier: notifier, isRefreshing: isRefreshing),
               FeedBodySection(feed: feed, notifier: notifier),
               FeedMediaSection(feed: feed, notifier: notifier, isRefreshing: isRefreshing),
+              if (isEditable) FeedControl(initialFeed: initialFeed),
               FeedActionSection(feed: feed, notifier: notifier),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// FeedHeaderSection
+class FeedHeaderSection extends ConsumerWidget {
+  final FeedModel feed;
+  final bool isRefreshing;
+  final FeedCardStateNotifier notifier;
+
+  const FeedHeaderSection({super.key, required this.feed, required this.isRefreshing, required this.notifier});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    double blurSigma = isRefreshing ? 3 : 0;
+
+    final String? avatarUrl = feed.author.avatarUrl;
+    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        /// Left side items (avatar + name + time)
+        Row(
+          spacing: 8.dp,
+          children: [
+            /// Avatar
+            GestureDetector(
+              onTap: () {
+                final Storage storage = Storage();
+                final UserModel? user = storage.getUser();
+                if (user?.id == feed.author.id) {
+                  context.go('/profile');
+                } else {
+                  context.pushNamed('previewProfile', extra: feed.author.id);
+                }
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.dp),
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                  child: CachedNetworkImage(
+                    imageUrl: '${constants.bucketEndpoint}/$avatarUrl',
+                    fit: BoxFit.cover,
+                    width: 32.dp,
+                    memCacheWidth: 32.cacheSize(context),
+                    placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
+                    errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
+                  ),
+                ),
+              ),
+            ),
+
+            /// Name
+            Text(
+              '${feed.author.name}',
+              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+            ),
+
+            /// timeAgoShort
+            if (!isEditable)
+              Text(
+                FeedModel.timeAgoShort(dateTime: feed.createdAt!),
+                style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+              ),
+          ],
+        ),
+
+        /// FeedCardMenuButton
+        FeedCardThreeDotsButton(feed: feed, notifier: notifier),
+      ],
     );
   }
 }
@@ -89,7 +164,7 @@ class FeedBodySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
+    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
 
     if (isEditable) {
       return FeedBodyInputWidget(feed: feed, notifier: notifier);
@@ -154,269 +229,158 @@ class _FeedBodyInputWidgetState extends ConsumerState<FeedBodyInputWidget> {
   }
 }
 
-/// FeedHeaderSection
-class FeedHeaderSection extends ConsumerWidget {
-  final FeedModel feed;
-  final bool isRefreshing;
-  final FeedCardStateNotifier notifier;
-
-  const FeedHeaderSection({super.key, required this.feed, required this.isRefreshing, required this.notifier});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
-    double blurSigma = isRefreshing ? 3 : 0;
-
-    final String? avatarUrl = feed.author.avatarUrl;
-    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// Left side items (avatar + name + time)
-        Row(
-          spacing: 8.dp,
-          children: [
-            /// Avatar
-            GestureDetector(
-              onTap: () {
-                final Storage storage = Storage();
-                final UserModel? user = storage.getUser();
-                if (user?.id == feed.author.id) {
-                  context.go('/profile');
-                } else {
-                  context.pushNamed('previewProfile', extra: feed.author.id);
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.dp),
-                child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-                  child: CachedNetworkImage(
-                    imageUrl: '${constants.bucketEndpoint}/$avatarUrl',
-                    fit: BoxFit.cover,
-                    width: 32.dp,
-                    memCacheWidth: 32.cacheSize(context),
-                    placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
-                    errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
-                  ),
-                ),
-              ),
-            ),
-
-            /// Name
-            Text(
-              '${feed.author.name}',
-              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
-            ),
-            if (!isEditable)
-              Text(
-                FeedModel.timeAgoShort(dateTime: feed.createdAt!),
-                style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
-              ),
-          ],
-        ),
-
-        /// FeedCardMenuButton
-        FeedCardMenuButton(feed: feed, notifier: notifier),
-      ],
-    );
-  }
-}
-
-/// FeedCardMenuButton
-class FeedCardMenuButton extends ConsumerWidget {
+/// FeedCardThreeDotsButton
+class FeedCardThreeDotsButton extends ConsumerWidget {
   final FeedModel feed;
   final FeedCardStateNotifier notifier;
 
-  const FeedCardMenuButton({super.key, required this.feed, required this.notifier});
+  const FeedCardThreeDotsButton({super.key, required this.feed, required this.notifier});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
     final int tabIndex = ref.watch(feedsScreenTabIndexProvider);
-    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
-    return Row(
-      spacing: 16.dp,
-      children: [
-        if (isEditable)
-          GestureDetector(
-            onTap: () async {
-              try {
-                if (feed.feedMode == FeedMode.create) await notifier.save();
-                if (feed.feedMode == FeedMode.edit) await notifier.update();
-              } catch (error) {
-                myLogger.e('$error');
+    return GestureDetector(
+      child: Icon(Icons.more_vert_rounded, color: feed.feedMode == FeedMode.view ? theme.primaryText : theme.secondaryText, size: 24.dp),
+      onTap: () {
+        if (feed.feedMode != FeedMode.view) return;
+        final Storage storage = Storage();
+        final UserModel? user = storage.getUser();
+        if (feed.feedMode == FeedMode.create) return;
 
-                String errorMessage;
-                if (error is List) {
-                  errorMessage = error.join(', ');
-                } else if (error is Exception && error.toString().startsWith('Exception: [')) {
-                  // Extract inner list string from Exception string: "Exception: [msg1, msg2]"
-                  errorMessage = error.toString().replaceFirst('Exception: [', '').replaceFirst(']', '');
-                } else {
-                  errorMessage = error.toString();
-                }
-
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: theme.tertiaryBackground,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                    content: Text(errorMessage, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.redAccent)),
+        if (feed.author.id == user?.id) {
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: theme.secondaryBackground,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
+            builder: (context) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    splashColor: Colors.red,
+                    iconColor: theme.primaryText,
+                    titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                    subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                    leading: const Icon(Icons.edit_rounded),
+                    title: const Text('Edit'),
+                    // subtitle: const Text('subtitle'),
+                    onTap: () {
+                      notifier.updateField(feed: feed.copyWith(feedMode: FeedMode.update));
+                      context.pop();
+                    },
                   ),
-                );
-              }
-            },
-            child: Text(
-              'save',
-              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-
-        GestureDetector(
-          child: Icon(Icons.more_vert_rounded, color: theme.primaryText, size: 24.dp),
-          onTap: () {
-            final Storage storage = Storage();
-            final UserModel? user = storage.getUser();
-            if (feed.feedMode == FeedMode.create) return;
-
-            if (feed.author.id == user?.id) {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: theme.secondaryBackground,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
-                builder: (context) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ListTile(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        splashColor: Colors.red,
-                        iconColor: theme.primaryText,
-                        titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                        subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                        leading: const Icon(Icons.flag_rounded),
-                        title: const Text('Edit'),
-                        // subtitle: const Text('subtitle'),
-                        onTap: () {
-                          notifier.updateField(feed: feed.copyWith(feedMode: FeedMode.edit));
-                          context.pop();
-                        },
-                      ),
-                      ListTile(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        iconColor: theme.primaryText,
-                        titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                        subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
-                        leading: const Icon(Icons.delete_outline_rounded),
-                        title: const Text('Delete'),
-                        // subtitle: const Text('subtitle'),
-                        onTap: () async {
-                          final communityServices = FeedService();
-                          try {
-                            final bool ok = await communityServices.fetchDeleteFeed(feedId: feed.id);
-                            myLogger.d('ok: $ok');
-                            if (ok) {
-                              final timelineType = switch (tabIndex) {
-                                0 => TimelineType.discover,
-                                1 => TimelineType.following,
-                                _ => TimelineType.discover,
-                              };
-                              ref.read(timelineNotifierProvider(timelineType).notifier).refresh(timelineType: timelineType);
-                            }
-                            if (!context.mounted) return;
-                            context.pop();
-                          } catch (error) {
-                            String errorMessage;
-                            if (error is List) {
-                              errorMessage = error.join(', ');
-                            } else if (error is Exception && error.toString().startsWith('Exception: [')) {
-                              // Extract inner list string from Exception string: "Exception: [msg1, msg2]"
-                              errorMessage = error.toString().replaceFirst('Exception: [', '').replaceFirst(']', '');
-                            } else {
-                              errorMessage = error.toString();
-                            }
-
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: theme.tertiaryBackground,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
-                                content: Text(errorMessage, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.redAccent)),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
-            } else {
-              final future = Future.wait([notifier.blockUserStatus(blockedId: feed.author.id), notifier.reportStatuses(feedId: feed.id)]);
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: theme.secondaryBackground,
-                isScrollControlled: true,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
-                builder: (context) {
-                  return Padding(
-                    padding: MediaQuery.of(context).viewInsets,
-                    child: FutureBuilder(
-                      future: future,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return BlockUserAndReportWidget(
-                            isBlocked: false,
-                            isSymmetrical: false,
-                            reportStatus: {
-                              'copyright_infringement': false,
-                              'spam': false,
-                              'nudity_or_sexual_content': false,
-                              'misinformation': false,
-                              'harassment_or_bullying': false,
-                              'hate_speech': false,
-                              'violence_or_threats': false,
-                              'self_harm_or_suicide': false,
-                              'impersonation': false,
-                              'other': false,
-                            },
-                            authorId: feed.author.id,
-                            feedId: feed.id,
-                            notifier: notifier,
-                          );
+                  ListTile(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    iconColor: theme.primaryText,
+                    titleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                    subtitleTextStyle: GoogleFonts.quicksand(color: theme.primaryText),
+                    leading: const Icon(Icons.delete_outline_rounded),
+                    title: const Text('Delete'),
+                    // subtitle: const Text('subtitle'),
+                    onTap: () async {
+                      final communityServices = FeedService();
+                      try {
+                        final bool ok = await communityServices.fetchDeleteFeed(feedId: feed.id);
+                        myLogger.d('ok: $ok');
+                        if (ok) {
+                          final timelineType = switch (tabIndex) {
+                            0 => TimelineType.discover,
+                            1 => TimelineType.following,
+                            _ => TimelineType.discover,
+                          };
+                          ref.read(timelineNotifierProvider(timelineType).notifier).refresh(timelineType: timelineType);
+                        }
+                        if (!context.mounted) return;
+                        context.pop();
+                      } catch (error) {
+                        String errorMessage;
+                        if (error is List) {
+                          errorMessage = error.join(', ');
+                        } else if (error is Exception && error.toString().startsWith('Exception: [')) {
+                          // Extract inner list string from Exception string: "Exception: [msg1, msg2]"
+                          errorMessage = error.toString().replaceFirst('Exception: [', '').replaceFirst(']', '');
+                        } else {
+                          errorMessage = error.toString();
                         }
 
-                        if (snapshot.hasError) {
-                          return ListTile(title: const Text('Error loading options'), subtitle: Text(snapshot.error.toString()));
-                        }
-
-                        final blockStatus = snapshot.data![0];
-                        final reportStatus = snapshot.data![1];
-
-                        final bool isBlocked = blockStatus['blocked'] ?? false;
-                        final bool isSymmetrical = blockStatus['symmetrical'] ?? false;
-
-                        return BlockUserAndReportWidget(
-                          isBlocked: isBlocked,
-                          isSymmetrical: isSymmetrical,
-                          reportStatus: reportStatus,
-                          authorId: feed.author.id,
-                          feedId: feed.id,
-                          notifier: notifier,
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: theme.tertiaryBackground,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.dp)),
+                            content: Text(errorMessage, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.redAccent)),
+                          ),
                         );
-                      },
-                    ),
-                  );
-                },
+                      }
+                    },
+                  ),
+                ],
               );
-            }
-          },
-        ),
-      ],
+            },
+          );
+        } else {
+          final future = Future.wait([notifier.blockUserStatus(blockedId: feed.author.id), notifier.reportStatuses(feedId: feed.id)]);
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: theme.secondaryBackground,
+            isScrollControlled: true,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(12.dp))),
+            builder: (context) {
+              return Padding(
+                padding: MediaQuery.of(context).viewInsets,
+                child: FutureBuilder(
+                  future: future,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return BlockUserAndReportWidget(
+                        isBlocked: false,
+                        isSymmetrical: false,
+                        reportStatus: {
+                          'copyright_infringement': false,
+                          'spam': false,
+                          'nudity_or_sexual_content': false,
+                          'misinformation': false,
+                          'harassment_or_bullying': false,
+                          'hate_speech': false,
+                          'violence_or_threats': false,
+                          'self_harm_or_suicide': false,
+                          'impersonation': false,
+                          'other': false,
+                        },
+                        authorId: feed.author.id,
+                        feedId: feed.id,
+                        notifier: notifier,
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return ListTile(title: const Text('Error loading options'), subtitle: Text(snapshot.error.toString()));
+                    }
+
+                    final blockStatus = snapshot.data![0];
+                    final reportStatus = snapshot.data![1];
+
+                    final bool isBlocked = blockStatus['blocked'] ?? false;
+                    final bool isSymmetrical = blockStatus['symmetrical'] ?? false;
+
+                    return BlockUserAndReportWidget(
+                      isBlocked: isBlocked,
+                      isSymmetrical: isSymmetrical,
+                      reportStatus: reportStatus,
+                      authorId: feed.author.id,
+                      feedId: feed.id,
+                      notifier: notifier,
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        }
+      },
     );
   }
 }
@@ -502,19 +466,19 @@ class BlockUserAndReportWidget extends ConsumerWidget {
 /// FeedMediaSection
 class FeedMediaSection extends ConsumerWidget {
   final FeedModel feed;
-  final bool isRefreshing;
   final FeedCardStateNotifier notifier;
+  final bool isRefreshing;
 
   const FeedMediaSection({super.key, required this.feed, required this.isRefreshing, required this.notifier});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
+    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
     final showVideo = feed.videoFile != null ? true : feed.videoUrl != null && !feed.removeVideo;
-    final bool showImages = feed.imageFile != null ? true : feed.imageUrl != null && !feed.removeImage;
+    final bool showImage = feed.imageFile != null ? true : feed.imageUrl != null && !feed.removeImage;
 
     if (showVideo) return FeedVideoWidget(feed: feed, isRefreshing: isRefreshing, notifier: notifier);
-    if (showImages) return FeedImageWidget(feed: feed, isRefreshing: isRefreshing, notifier: notifier);
+    if (showImage) return FeedImageWidget(feed: feed, isRefreshing: isRefreshing, notifier: notifier);
     if (isEditable) return AddMediaWidget(feed: feed, notifier: notifier);
     return const SizedBox.shrink();
   }
@@ -535,9 +499,11 @@ class FeedVideoWidget extends ConsumerWidget {
     final videoController = ref.watch(videoControllerProvider(videoSourceState));
     final videoControllerNotifier = ref.read(videoControllerProvider(videoSourceState).notifier);
 
-    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
+    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
     double blurSigma = isRefreshing ? 3 : 0;
-    final double videoWidth = Sizes.screenWidth - 40.dp;
+    final videoAspectRatio = feed.videoAspectRatio!;
+    final isTall = videoAspectRatio < 0.8;
+    final aspectRatio = isTall ? 0.8 : videoAspectRatio;
 
     return videoController.when(
       data: (VideoPlayerController controller) {
@@ -549,12 +515,15 @@ class FeedVideoWidget extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10.dp),
               child: ImageFiltered(
                 imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  width: double.infinity,
-                  height: videoWidth / controller.value.aspectRatio,
-                  child: VideoPlayer(controller),
+                child: AspectRatio(
+                  aspectRatio: aspectRatio,
+                  child: isTall
+                      ? FittedBox(
+                          fit: BoxFit.fitWidth,
+                          alignment: Alignment.center,
+                          child: SizedBox(width: controller.value.size.width, height: controller.value.size.height, child: VideoPlayer(controller)),
+                        )
+                      : VideoPlayer(controller),
                 ),
               ),
             ),
@@ -649,7 +618,7 @@ class FeedVideoWidget extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const FeedVideoShimmerWidget(),
+      loading: () => FeedVideoShimmerWidget(aspectRatio: aspectRatio),
       error: (error, _) {
         myLogger.e('error: $error');
         return const FeedVideoErrorWidget();
@@ -670,7 +639,7 @@ class FeedImageWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
 
-    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.edit;
+    final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
     double blurSigma = isRefreshing ? 3 : 0;
     final double imageWidth = Sizes.screenWidth - 40.dp;
 
@@ -808,6 +777,7 @@ class FeedActionSection extends ConsumerWidget {
               iconDataFill: KronkIcon.messageCircle1,
               iconDataOutline: KronkIcon.messageSquareLeft2,
               count: feed.engagement.comments,
+              isViewing: feed.feedMode == FeedMode.view,
               onTap: () {
                 ref.read(sharedFeed.notifier).state = feed;
                 context.push('/feeds/feed');
@@ -820,6 +790,7 @@ class FeedActionSection extends ConsumerWidget {
               iconDataOutline: KronkIcon.repeat6,
               interacted: (feed.engagement.reposted == true) || (feed.engagement.quoted == true),
               count: feed.repostsAndQuotes,
+              isViewing: feed.feedMode == FeedMode.view,
               onTap: feed.feedMode == FeedMode.create ? null : () async => notifier.handleEngagement(engagementType: EngagementType.reposts),
             ),
 
@@ -829,11 +800,12 @@ class FeedActionSection extends ConsumerWidget {
               iconDataOutline: KronkIcon.heartOutline,
               interacted: feed.engagement.liked ?? false,
               count: feed.engagement.likes,
+              isViewing: feed.feedMode == FeedMode.view,
               onTap: feed.feedMode == FeedMode.create ? null : () async => notifier.handleEngagement(engagementType: EngagementType.likes),
             ),
 
             /// Views
-            FeedActionRow(iconDataFill: KronkIcon.eyeOpen, iconDataOutline: KronkIcon.eyeOpen, count: feed.engagement.views),
+            FeedActionRow(iconDataFill: KronkIcon.eyeOpen, iconDataOutline: KronkIcon.eyeOpen, count: feed.engagement.views, isViewing: feed.feedMode == FeedMode.view),
           ],
         ),
 
@@ -842,7 +814,106 @@ class FeedActionSection extends ConsumerWidget {
           iconDataFill: KronkIcon.bookmarkFill5,
           iconDataOutline: KronkIcon.bookmarkOutline5,
           interacted: feed.engagement.bookmarked ?? false,
+          isViewing: feed.feedMode == FeedMode.view,
           onTap: feed.feedMode == FeedMode.create ? null : () async => notifier.handleEngagement(engagementType: EngagementType.bookmarks),
+        ),
+      ],
+    );
+  }
+}
+
+/// FeedControl
+class FeedControl extends ConsumerWidget {
+  final FeedModel initialFeed;
+
+  const FeedControl({super.key, required this.initialFeed});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    final feed = ref.watch(feedCardStateProvider(initialFeed));
+    final notifier = ref.read(feedCardStateProvider(initialFeed).notifier);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        /// feed visibility & comment policy & scheduled time
+        GestureDetector(
+          onTap: () => showFeedAdditionalSettingsModal(context: context, initialFeed: initialFeed, backgroundColor: theme.secondaryBackground),
+          child: Container(
+            height: 24.dp,
+            padding: EdgeInsets.symmetric(horizontal: 8.dp),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: theme.tertiaryBackground, borderRadius: BorderRadius.circular(8.dp)),
+            child: Text(
+              'additional settings',
+              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+
+        /// cancel & save & update
+        Row(
+          spacing: 8.dp,
+          children: [
+            /// cancel
+            GestureDetector(
+              onTap: () {
+                if (feed.isLoading) return;
+                if (feed.feedMode == FeedMode.update) {
+                  notifier.updateField(feed: feed.copyWith(feedMode: FeedMode.view));
+                  return;
+                }
+                final currentIndex = ref.read(feedsScreenTabIndexProvider);
+                final currentTimeline = currentIndex == 0 ? TimelineType.discover : TimelineType.following;
+                ref.read(timelineNotifierProvider(currentTimeline).notifier).removeLast();
+              },
+              child: Container(
+                width: 74.dp,
+                height: 24.dp,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: theme.tertiaryBackground, borderRadius: BorderRadius.circular(8.dp)),
+                child: Text(
+                  'cancel',
+                  style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+
+            /// save & update
+            GestureDetector(
+              onTap: () async {
+                if (feed.isLoading) return;
+                try {
+                  if (feed.feedMode == FeedMode.create) await notifier.save();
+                  if (feed.feedMode == FeedMode.update) await notifier.update();
+                } catch (e) {
+                  myLogger.w('catch while saving feed, e: $e');
+                }
+              },
+              child: Container(
+                width: 74.dp,
+                height: 24.dp,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: theme.tertiaryBackground,
+                  borderRadius: BorderRadius.circular(8.dp),
+                  border: Border.all(color: theme.outline, width: 0.2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (!feed.isLoading)
+                      Text(
+                        feed.feedMode == FeedMode.create ? 'create' : 'update',
+                        style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+
+                    if (feed.isLoading) LoadingAnimationWidget.threeArchedCircle(color: theme.primaryText, size: 14.dp),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -854,17 +925,22 @@ class FeedActionRow extends ConsumerWidget {
   final IconData iconDataFill;
   final IconData iconDataOutline;
   final bool interacted;
+  final bool isViewing;
   final int? count;
   final void Function()? onTap;
 
-  const FeedActionRow({super.key, required this.iconDataFill, required this.iconDataOutline, this.interacted = false, this.count, this.onTap});
+  const FeedActionRow({super.key, required this.iconDataFill, required this.iconDataOutline, this.interacted = false, required this.isViewing, this.count, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
 
     final IconData iconToUse = interacted ? iconDataFill : iconDataOutline;
-    final Color color = interacted ? iconDataOutline.appropriateColor : theme.primaryText;
+    final Color color = interacted
+        ? iconDataOutline.appropriateColor
+        : isViewing
+        ? theme.primaryText
+        : theme.secondaryText;
 
     return GestureDetector(
       onTap: onTap,
@@ -904,4 +980,95 @@ Future<Size> getNetworkImageSize(String url) async {
         }),
       );
   return completer.future;
+}
+
+void showFeedAdditionalSettingsModal({required BuildContext context, required FeedModel initialFeed, required Color backgroundColor}) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: backgroundColor,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(16.dp)),
+    builder: (context) => Consumer(
+      builder: (context, ref, child) {
+        final theme = ref.watch(themeProvider);
+        final feed = ref.watch(feedCardStateProvider(initialFeed));
+        final notifier = ref.read(feedCardStateProvider(initialFeed).notifier);
+        return Padding(
+          padding: EdgeInsets.all(28.dp),
+          child: Column(
+            spacing: 12.dp,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              /// Feed Visibility
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Feed visibility:',
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 18.dp, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 4.dp),
+                  ...FeedVisibility.values.map((v) {
+                    final isActive = feed.feedVisibility == v;
+                    return RadioListTile<FeedVisibility>(
+                      value: v,
+                      groupValue: feed.feedVisibility,
+                      dense: true,
+                      tileColor: theme.tertiaryBackground,
+                      activeColor: theme.primaryText,
+                      title: Text(
+                        v.name,
+                        style: GoogleFonts.quicksand(color: isActive ? theme.primaryText : theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
+                      ),
+                      onChanged: (FeedVisibility? feedVisibility) => notifier.updateField(feed: feed.copyWith(feedVisibility: feedVisibility)),
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(width: 0, color: Colors.transparent),
+                        borderRadius: BorderRadius.vertical(
+                          top: v == FeedVisibility.public ? Radius.circular(12.dp) : Radius.zero,
+                          bottom: v == FeedVisibility.private ? Radius.circular(12.dp) : Radius.zero,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+
+              /// Comment Policy
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Comment policy:',
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 18.dp, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 4.dp),
+                  ...CommentPolicy.values.map((v) {
+                    final isActive = feed.commentPolicy == v;
+                    return RadioListTile<CommentPolicy>(
+                      value: v,
+                      groupValue: feed.commentPolicy,
+                      dense: true,
+                      tileColor: theme.tertiaryBackground,
+                      activeColor: theme.primaryText,
+                      title: Text(
+                        v.name,
+                        style: GoogleFonts.quicksand(color: isActive ? theme.primaryText : theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
+                      ),
+                      onChanged: (CommentPolicy? commentPolicy) => notifier.updateField(feed: feed.copyWith(commentPolicy: commentPolicy)),
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(width: 0, color: Colors.transparent),
+                        borderRadius: BorderRadius.vertical(
+                          top: v == CommentPolicy.everyone ? Radius.circular(12.dp) : Radius.zero,
+                          bottom: v == CommentPolicy.followers ? Radius.circular(12.dp) : Radius.zero,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
 }

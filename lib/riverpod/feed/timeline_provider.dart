@@ -47,8 +47,6 @@ class TimelineNotifier extends FamilyAsyncNotifier<List<FeedModel>, TimelineType
       _realEnd = results.item2 - 1;
       return results.item1.isEmpty ? [] : results.item1;
     } catch (error) {
-      // state = AsyncValue.error(error, StackTrace.current);
-      // return [];
       rethrow;
     }
   }
@@ -86,9 +84,23 @@ class TimelineNotifier extends FamilyAsyncNotifier<List<FeedModel>, TimelineType
       body: null,
       feedMode: FeedMode.create,
       engagement: const EngagementModel(),
+      feedVisibility: FeedVisibility.public,
+      commentPolicy: CommentPolicy.everyone,
     );
 
     state = AsyncValue.data([placeholder, ...state.valueOrNull ?? []]);
+  }
+
+  void removeLast() {
+    final currentFeeds = state.valueOrNull;
+
+    if (currentFeeds == null || currentFeeds.isEmpty) return;
+
+    // Check if the first feed is in create mode
+    if (currentFeeds.first.feedMode == FeedMode.create) {
+      final updatedFeeds = List<FeedModel>.from(currentFeeds)..removeAt(0);
+      state = AsyncValue.data(updatedFeeds);
+    }
   }
 
   Future<void> loadMore({required TimelineType timelineType}) async {

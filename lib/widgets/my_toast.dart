@@ -36,7 +36,6 @@ ToastificationItem showToast(
     borderSide: BorderSide.none,
     borderRadius: BorderRadius.circular(12.dp),
     padding: EdgeInsets.symmetric(horizontal: 16.dp, vertical: 12.dp),
-    margin: EdgeInsets.symmetric(horizontal: 18.dp),
     closeButton: const ToastCloseButton(showType: CloseButtonShowType.none),
     animationBuilder: (context, animation, alignment, child) => FadeTransition(opacity: animation, child: child),
     // animationBuilder: (context, animation, alignment, child) => ScaleTransition(scale: animation, child: child),

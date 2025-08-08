@@ -86,7 +86,10 @@ class Storage {
 
   UserModel? getUser() => userBox.get('user');
 
-  Future<void> setUserAsync({required UserModel user}) async => await userBox.put('user', user);
+  Future<void> setUserAsync({required UserModel user}) async {
+    myLogger.t('user is storing to storage, user.name: ${user.name}');
+    await userBox.put('user', user);
+  }
 
   Future<String?> getAccessTokenAsync() async {
     String? accessToken = await settingsBox.get('access_token');

@@ -348,9 +348,9 @@ class ProfileCard extends ConsumerWidget {
                 onTap: () => context.pop(),
                 child: Container(
                   width: 40.dp,
-                  padding: EdgeInsets.all(2.dp),
+                  padding: EdgeInsets.all(4.dp),
                   decoration: BoxDecoration(color: theme.primaryBackground, shape: BoxShape.circle),
-                  child: const FittedBox(child: Icon(Icons.arrow_back_rounded)),
+                  child: Icon(Icons.arrow_back_rounded, size: 28.dp),
                 ),
               ),
             ),

@@ -52,7 +52,7 @@ class ProfileNotifier extends AutoDisposeFamilyAsyncNotifier<UserModel, String?>
       }
       final UserModel user = await _userService.fetchGetProfile(targetUserId: targetUserId);
 
-      await _storage.setUserAsync(user: user);
+      // await _storage.setUserAsync(user: user);
       return user;
     } catch (error, stacktrace) {
       myLogger.e('Unexpected error in _fetchProfile: $error \nStacktrace: $stacktrace');

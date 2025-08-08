@@ -6,7 +6,7 @@ enum LayoutStyle { edgeToEdge, floating }
 
 enum EngagementType { feeds, reposts, quotes, likes, views, bookmarks }
 
-enum FeedMode { view, edit, create }
+enum FeedMode { view, update, create }
 
 class EngagementStatus {
   final bool isReposted;
@@ -47,9 +47,9 @@ enum ReportReason {
 
 enum FollowStatus { pending, accepted, declined }
 
-enum FeedVisibility { public, followers, private, archived }
+enum FeedVisibility { public, followers, private }
 
-enum CommentingPolicy { everyone, followers }
+enum CommentPolicy { everyone, followers }
 
 enum ProcessStatus { pending, processed, failed }
 

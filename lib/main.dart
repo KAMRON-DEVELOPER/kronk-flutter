@@ -75,6 +75,8 @@ class _MyAppState extends ConsumerState<MyApp> {
       theme: ThemeData(
         splashFactory: NoSplash.splashFactory,
         scaffoldBackgroundColor: theme.primaryBackground,
+        unselectedWidgetColor: theme.secondaryText,
+        listTileTheme: ListTileThemeData(dense: true, iconColor: theme.secondaryText, selectedColor: Colors.red),
         appBarTheme: AppBarTheme(
           backgroundColor: theme.primaryBackground,
           surfaceTintColor: theme.primaryBackground,
@@ -84,11 +86,12 @@ class _MyAppState extends ConsumerState<MyApp> {
           elevation: 0,
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: theme.secondaryBackground,
+          backgroundColor: theme.primaryBackground,
           foregroundColor: theme.primaryText,
           shape: const CircleBorder(),
           iconSize: 36.dp,
         ),
+        bottomSheetTheme: BottomSheetThemeData(dragHandleColor: theme.secondaryText),
         iconTheme: IconThemeData(color: theme.primaryText, size: 16.dp),
         scrollbarTheme: ScrollbarThemeData(radius: Radius.circular(2.dp), thickness: WidgetStatePropertyAll(4.dp), thumbColor: WidgetStatePropertyAll(theme.secondaryText)),
       ),

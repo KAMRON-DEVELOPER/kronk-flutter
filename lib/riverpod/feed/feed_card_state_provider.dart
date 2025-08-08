@@ -32,23 +32,14 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
   }
 
   void updateField({required FeedModel feed}) {
-    myLogger.d('feed.id: ${feed.id}');
-    myLogger.d('feed.body: ${feed.body}');
-    myLogger.d('feed.author.name: ${feed.author.name}');
-    myLogger.d('feed.author.username: ${feed.author.username}');
-    myLogger.d('feed.imageFile?.path: ${feed.imageFile?.path}');
-    myLogger.d('feed.imageUrl: ${feed.imageUrl}');
     state = feed;
   }
 
   Future<void> save() async {
     final FeedService service = FeedService();
 
-    myLogger.d('SAVE');
-    myLogger.d('state.body: ${state.body}');
-    myLogger.d('state.author.name: ${state.author.name}');
-    myLogger.d('state.imageFile.length: ${state.imageFile?.path}');
-    myLogger.d('state.state.videoFile?.path: ${state.videoFile?.path}');
+    final currentState = state;
+    state = currentState.copyWith(isLoading: true);
 
     try {
       final feed = state;
@@ -64,6 +55,7 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
 
       if (hasVideo) {
         final String? mimeType = lookupMimeType(feed.videoFile!.path);
+        map['video_aspect_ratio'] = 1;
         map['video_file'] = await MultipartFile.fromFile(
           feed.videoFile!.path,
           filename: feed.videoFile!.path.split('/').last,
@@ -73,6 +65,7 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
 
       if (hasImage) {
         final String? mimeType = lookupMimeType(feed.imageFile!.path);
+        map['image_aspect_ratio'] = 1;
         map['image_file'] = await MultipartFile.fromFile(
           feed.imageFile!.path,
           filename: feed.imageFile!.path.split('/').last,
@@ -86,18 +79,23 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
 
       final Map<String, dynamic> data = jsonResponse.data;
 
-      final createdFeed = state.copyWith(
-        id: data['id'],
-        createdAt: DateTime.fromMillisecondsSinceEpoch((data['created_at'] * 1000).toInt()),
-        updatedAt: DateTime.fromMillisecondsSinceEpoch((data['updated_at'] * 1000).toInt()),
-        body: data['body'],
-        author: AuthorModel.fromJson(data['author']),
-        feedVisibility: FeedVisibility.values.byName(data['feed_visibility']),
-        commentPolicy: CommentingPolicy.values.byName(data['comment_policy']),
-        feedMode: FeedMode.view,
-      );
+      // final newFeed = state.copyWith(
+      //   id: data['id'],
+      //   createdAt: DateTime.fromMillisecondsSinceEpoch((data['created_at'] * 1000).toInt()),
+      //   updatedAt: DateTime.fromMillisecondsSinceEpoch((data['updated_at'] * 1000).toInt()),
+      //   body: data['body'],
+      //   author: AuthorModel.fromJson(data['author']),
+      //   feedVisibility: FeedVisibility.values.byName(data['feed_visibility']),
+      //   commentPolicy: CommentPolicy.values.byName(data['comment_policy']),
+      //   videoAspectRatio: data['video_aspect_ratio'],
+      //   imageAspectRatio: data['image_aspect_ratio'],
+      //   feedMode: FeedMode.view,
+      //   isLoading: false,
+      // );
 
-      state = createdFeed;
+      final newFeed = FeedModel.fromJson(data).copyWith(feedMode: FeedMode.view, isLoading: false);
+
+      state = newFeed;
     } catch (error) {
       myLogger.e('error: $error');
       rethrow;
@@ -107,6 +105,9 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
   Future<void> update() async {
     final FeedService service = FeedService();
 
+    final currentState = state;
+    state = currentState.copyWith(isLoading: true);
+
     myLogger.d('UPDATE');
     myLogger.d('state.body: ${state.body}');
     myLogger.d('state.author.name: ${state.author.name}');
@@ -114,6 +115,8 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
     myLogger.d('state.state.videoFile?.path: ${state.videoFile?.path}');
     myLogger.d('state.removeImage: ${state.removeImage}');
     myLogger.d('state.removeVideo: ${state.removeVideo}');
+    myLogger.d('state.feedVisibility: ${state.feedVisibility}');
+    myLogger.d('state.commentPolicy: ${state.commentPolicy}');
 
     try {
       final feed = state;
@@ -157,8 +160,7 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
 
       final data = jsonResponse.data as Map<String, dynamic>;
 
-      myLogger.w('type of data: ${data.runtimeType}');
-      final updatedFeed = FeedModel.fromJson(data);
+      final updatedFeed = FeedModel.fromJson(data).copyWith(feedMode: FeedMode.view, isLoading: false);
 
       state = updatedFeed;
     } catch (error) {

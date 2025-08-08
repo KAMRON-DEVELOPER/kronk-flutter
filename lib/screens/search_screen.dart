@@ -418,8 +418,10 @@ class ProfileSearchCard extends ConsumerWidget {
         final Storage storage = Storage();
         final UserModel? cacheUser = storage.getUser();
         if (cacheUser?.id == user.id) {
+          myLogger.d('it is me..., user.name: ${user.name} vs cacheUser.name: ${cacheUser?.name}');
           context.go('/profile');
         } else {
+          myLogger.d('it is Adhambek...');
           context.pushNamed('previewProfile', extra: user.id);
         }
       },

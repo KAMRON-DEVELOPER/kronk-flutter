@@ -39,7 +39,7 @@ class _NavbarState extends ConsumerState<Navbar> {
     final List<NavbarModel> items = ref.watch(navbarProvider).where((NavbarModel navbarItem) => navbarItem.isEnabled).toList();
     final int selectedIndex = ref.watch(selectedIndexProvider);
 
-    final double iconSize = 32.dp;
+    final double iconSize = 28.dp;
     const int maxIconsInScreen = 5;
     final double screenWidth = Sizes.screenWidth;
 

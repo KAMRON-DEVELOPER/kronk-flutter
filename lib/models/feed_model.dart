@@ -61,10 +61,12 @@ class FeedModel extends Equatable {
   final String? body;
   final AuthorModel author;
   final String? imageUrl;
+  final double? imageAspectRatio;
   final String? videoUrl;
+  final double? videoAspectRatio;
   final String? scheduledAt;
   final FeedVisibility? feedVisibility;
-  final CommentingPolicy? commentPolicy;
+  final CommentPolicy? commentPolicy;
   final EngagementModel engagement;
   final String? quoteId;
   final String? parentId;
@@ -73,6 +75,7 @@ class FeedModel extends Equatable {
   final FeedMode feedMode;
   final bool removeImage;
   final bool removeVideo;
+  final bool isLoading;
 
   const FeedModel({
     this.updatedAt,
@@ -81,7 +84,9 @@ class FeedModel extends Equatable {
     this.body,
     required this.author,
     this.imageUrl,
+    this.imageAspectRatio,
     this.videoUrl,
+    this.videoAspectRatio,
     this.scheduledAt,
     this.feedVisibility,
     this.commentPolicy,
@@ -93,6 +98,7 @@ class FeedModel extends Equatable {
     this.feedMode = FeedMode.view,
     this.removeImage = false,
     this.removeVideo = false,
+    this.isLoading = false,
   });
 
   int? get repostsAndQuotes {
@@ -117,10 +123,12 @@ class FeedModel extends Equatable {
       body: json['body'],
       author: AuthorModel.fromJson(json['author']),
       videoUrl: json['video_url'],
+      imageAspectRatio: json['image_aspect_ratio'],
       imageUrl: json['image_url'],
+      videoAspectRatio: json['video_aspect_ratio'],
       scheduledAt: json['scheduled_at'],
       feedVisibility: FeedVisibility.values.byName(json['feed_visibility']),
-      commentPolicy: CommentingPolicy.values.byName(json['comment_policy']),
+      commentPolicy: CommentPolicy.values.byName(json['comment_policy']),
       quoteId: json['quote_id'],
       parentId: json['parent_id'],
       engagement: EngagementModel.fromJson(json['engagement']),
@@ -148,7 +156,9 @@ class FeedModel extends Equatable {
     Object? body = _sentinel,
     AuthorModel? author,
     Object? videoUrl = _sentinel,
+    Object? imageAspectRatio = _sentinel,
     Object? imageUrl = _sentinel,
+    Object? videoAspectRatio = _sentinel,
     Object? scheduledAt = _sentinel,
     Object? feedVisibility = _sentinel,
     Object? commentPolicy = _sentinel,
@@ -160,6 +170,7 @@ class FeedModel extends Equatable {
     Object? feedMode = _sentinel,
     Object? removeImage = _sentinel,
     Object? removeVideo = _sentinel,
+    bool isLoading = false,
   }) {
     return FeedModel(
       id: id == _sentinel ? this.id : id as String?,
@@ -168,10 +179,12 @@ class FeedModel extends Equatable {
       body: body == _sentinel ? this.body : body as String?,
       author: author ?? this.author,
       imageUrl: imageUrl == _sentinel ? this.imageUrl : imageUrl as String?,
+      imageAspectRatio: imageAspectRatio == _sentinel ? this.imageAspectRatio : imageAspectRatio as double?,
       videoUrl: videoUrl == _sentinel ? this.videoUrl : videoUrl as String?,
+      videoAspectRatio: videoAspectRatio == _sentinel ? this.videoAspectRatio : videoAspectRatio as double?,
       scheduledAt: scheduledAt == _sentinel ? this.scheduledAt : scheduledAt as String?,
       feedVisibility: feedVisibility == _sentinel ? this.feedVisibility : feedVisibility as FeedVisibility,
-      commentPolicy: commentPolicy == _sentinel ? this.commentPolicy : commentPolicy as CommentingPolicy,
+      commentPolicy: commentPolicy == _sentinel ? this.commentPolicy : commentPolicy as CommentPolicy,
       quoteId: quoteId == _sentinel ? this.quoteId : quoteId as String?,
       parentId: parentId == _sentinel ? this.parentId : parentId as String?,
       engagement: engagement ?? this.engagement,
@@ -180,11 +193,34 @@ class FeedModel extends Equatable {
       feedMode: feedMode == _sentinel ? this.feedMode : feedMode as FeedMode,
       removeImage: removeImage == _sentinel ? this.removeImage : removeImage as bool,
       removeVideo: removeVideo == _sentinel ? this.removeVideo : removeVideo as bool,
+      isLoading: isLoading,
     );
   }
 
   @override
-  List<Object?> get props => [updatedAt, createdAt, id, author, body, imageUrl, videoUrl, scheduledAt, feedVisibility, commentPolicy, engagement, imageFile, videoFile, feedMode];
+  List<Object?> get props => [
+    id,
+    updatedAt,
+    createdAt,
+    body,
+    author,
+    imageUrl,
+    imageAspectRatio,
+    videoUrl,
+    videoAspectRatio,
+    scheduledAt,
+    feedVisibility,
+    commentPolicy,
+    engagement,
+    quoteId,
+    parentId,
+    imageFile,
+    videoFile,
+    feedMode,
+    removeImage,
+    removeVideo,
+    isLoading,
+  ];
 }
 
 class FeedSearchResultModel {
@@ -194,7 +230,7 @@ class FeedSearchResultModel {
   final String body;
   final String authorId;
   final FeedVisibility feedVisibility;
-  final CommentingPolicy commentingPolicy;
+  final CommentPolicy commentPolicy;
 
   const FeedSearchResultModel({
     required this.id,
@@ -203,7 +239,7 @@ class FeedSearchResultModel {
     required this.createdAt,
     required this.updatedAt,
     required this.feedVisibility,
-    required this.commentingPolicy,
+    required this.commentPolicy,
   });
 
   factory FeedSearchResultModel.fromJson(Map<String, dynamic> json) {
@@ -214,7 +250,7 @@ class FeedSearchResultModel {
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
       feedVisibility: FeedVisibility.values.byName(json['feed_visibility']),
-      commentingPolicy: CommentingPolicy.values.byName(json['comment_policy']),
+      commentPolicy: CommentPolicy.values.byName(json['comment_policy']),
     );
   }
 
@@ -226,7 +262,7 @@ class FeedSearchResultModel {
     String? createdAt,
     String? updatedAt,
     FeedVisibility? feedVisibility,
-    CommentingPolicy? commentingPolicy,
+    CommentPolicy? commentPolicy,
   }) {
     return FeedSearchResultModel(
       id: id ?? this.id,
@@ -235,7 +271,7 @@ class FeedSearchResultModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       feedVisibility: feedVisibility ?? this.feedVisibility,
-      commentingPolicy: commentingPolicy ?? this.commentingPolicy,
+      commentPolicy: commentPolicy ?? this.commentPolicy,
     );
   }
 }
