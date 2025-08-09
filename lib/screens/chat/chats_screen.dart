@@ -119,7 +119,7 @@ class _ChatsWidgetState extends ConsumerState<ChatsWidget> {
       child: chats.when(
         error: (error, stackTrace) {
           if (error is DioException) return Center(child: Text('${error.message}'));
-          return Center(child: Text('$error'));
+          return Center(child: Text(error.toString()));
         },
         loading: () => ChatListWidget(chats: _previousChats, isRefreshing: true),
         data: (List<ChatModel> chats) {
@@ -200,15 +200,14 @@ class ChatTile extends ConsumerWidget {
         ref.read(sharedChat.notifier).state = chat;
         context.pushNamed('chat');
       },
-      child: Material(
-        color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
+          border: BoxBorder.fromBorderSide(isFloating ? BorderSide.none : BorderSide(color: theme.outline, width: 0.5.dp)),
+          borderRadius: isFloating ? BorderRadius.circular(screenStyle.borderRadius) : BorderRadius.zero,
+        ),
         child: ListTile(
-          tileColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
           contentPadding: EdgeInsets.symmetric(horizontal: 10.dp, vertical: 0),
-          shape: RoundedRectangleBorder(
-            borderRadius: isFloating ? BorderRadius.circular(screenStyle.borderRadius) : BorderRadius.zero,
-            side: isFloating ? BorderSide.none : BorderSide(color: theme.outline, width: 0.5.dp),
-          ),
           leading: Stack(
             children: [
               /// Avatar
@@ -325,14 +324,14 @@ class _AvatarWithHoleAnimatedState extends ConsumerState<AvatarWithHoleAnimated>
         return AvatarWithHole(holeRadius: _radiusAnimation.value, avatarRadius: widget.avatarRadius, avatar: child);
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28.dp),
+        borderRadius: BorderRadius.circular(widget.avatarRadius),
         child: ImageFiltered(
           imageFilter: ImageFilter.blur(sigmaX: widget.blurSigma, sigmaY: widget.blurSigma),
           child: CachedNetworkImage(
             imageUrl: widget.avatarUrl,
             fit: BoxFit.cover,
-            width: 56.dp,
-            memCacheWidth: 56.cacheSize(context),
+            width: 2 * widget.avatarRadius,
+            memCacheWidth: 2 * widget.avatarRadius.cacheSize(context),
             placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 56.dp, color: theme.primaryText),
             errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 56.dp, color: theme.primaryText),
           ),
