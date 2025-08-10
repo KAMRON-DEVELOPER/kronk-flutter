@@ -12,7 +12,7 @@ import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:web_socket_channel/io.dart';
 
-final chatsWSNotifierProvider = AutoDisposeAsyncNotifierProvider<ChatsWSNotifierNotifier, Map<String, dynamic>>(ChatsWSNotifierNotifier.new);
+final chatsWebsocketProvider = AutoDisposeAsyncNotifierProvider<ChatsWSNotifierNotifier, Map<String, dynamic>>(ChatsWSNotifierNotifier.new);
 
 class ChatsWSNotifierNotifier extends AutoDisposeAsyncNotifier<Map<String, dynamic>> {
   IOWebSocketChannel? _channel;
@@ -113,28 +113,6 @@ class ChatsWSNotifierNotifier extends AutoDisposeAsyncNotifier<Map<String, dynam
     }
   }
 
-  /*
-  {
-    "id": "51c3cb5c551148cdaab3023219f56481",
-    "participant": {
-      "id": "4884809a41e14a83a66882e0b0938ce5",
-      "name": "Kamronbek Atajanov",
-      "username": "kamronbek",
-      "avatar_url": null,
-      "last_seen_at": 1753288270,
-      "is_online": true
-    },
-    "last_message": {
-      "id": "d351ba6e07804dd6825f5bf90b7a856a",
-      "sender_id": "96f90d7fda694128b27d0a0792600eae",
-      "chat_id": "51c3cb5c551148cdaab3023219f56481",
-      "message": "Hi brother.",
-      "created_at": 1753288562
-    },
-    "last_activity_at": 1753288562
-  }
- */
-
   void sendMessage({required String chatId, required String userId, required String participantId, required String message}) {
     try {
       final now = (DateTime.now().millisecondsSinceEpoch / 1000).toInt();
@@ -153,7 +131,9 @@ class ChatsWSNotifierNotifier extends AutoDisposeAsyncNotifier<Map<String, dynam
     }
   }
 
-  void handleTyping({required String chatId, required String text}) {
+  void handleTyping({required String? chatId, required String text}) {
+    if (chatId == null) return;
+
     final isTyping = _activeTypers.contains(chatId);
 
     if (text.isNotEmpty && !isTyping) {
@@ -161,7 +141,6 @@ class ChatsWSNotifierNotifier extends AutoDisposeAsyncNotifier<Map<String, dynam
       _activeTypers.add(chatId);
     }
 
-    // Cancel old timer if exists
     _typingTimers[chatId]?.cancel();
 
     if (text.isNotEmpty) {
@@ -183,7 +162,7 @@ class ChatsWSNotifierNotifier extends AutoDisposeAsyncNotifier<Map<String, dynam
 
   void _sendTypingStart({required String chatId}) {
     try {
-      _channel?.sink.add(jsonEncode({'type': ChatEvent.typingStart.name.toSnakeCase(), 'chat_id': chatId}));
+      _channel?.sink.add(jsonEncode({'id': chatId, 'type': ChatEvent.typingStart.name.toSnakeCase()}));
     } catch (e) {
       myLogger.e('Error while sending typing start event: $e');
       _scheduleReconnect();
@@ -192,7 +171,7 @@ class ChatsWSNotifierNotifier extends AutoDisposeAsyncNotifier<Map<String, dynam
 
   void _sendTypingStop({required String chatId}) {
     try {
-      _channel?.sink.add(jsonEncode({'type': ChatEvent.typingStop.name.toSnakeCase(), 'chat_id': chatId}));
+      _channel?.sink.add(jsonEncode({'id': chatId, 'type': ChatEvent.typingStop.name.toSnakeCase()}));
     } catch (e) {
       myLogger.e('Error while sending typing stop event: $e');
       _scheduleReconnect();

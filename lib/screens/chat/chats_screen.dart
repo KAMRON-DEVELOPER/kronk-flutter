@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/riverpod/chat/chats_provider.dart';
-import 'package:kronk/riverpod/chat/chats_ws_provider.dart';
+import 'package:kronk/riverpod/chat/chats_websocket_provider.dart';
 import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/screens/chat/chat_screen.dart';
@@ -18,7 +18,6 @@ import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
-import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_drawer.dart';
 import 'package:kronk/widgets/main_appbar.dart';
@@ -33,34 +32,7 @@ class ChatsScreen extends ConsumerWidget {
     final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
     final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
-    final AsyncValue<Map<String, dynamic>> chatsWS = ref.watch(chatsWSNotifierProvider);
-
-    chatsWS.when(
-      data: (data) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(chatsNotifierProvider.notifier).handleEvents(data: data);
-        });
-        // Future.microtask(() {
-        //   ref.read(chatsNotifierProvider.notifier).handleEvents(data: data);
-        // });
-      },
-      error: (error, stackTrace) {
-        myLogger.d('data: $error type: ${error.runtimeType}');
-      },
-      loading: () {
-        myLogger.d('loading');
-      },
-    );
-
-    ref.listen(chatsNotifierProvider, (previous, next) {
-      final ChatModel? cached = ref.read(sharedChat);
-      if (cached == null) return;
-
-      final updated = next.value?.firstWhere((chat) => chat.id == cached.id, orElse: () => cached);
-      if (updated != cached) {
-        ref.read(sharedChat.notifier).state = updated;
-      }
-    });
+    ref.listen(chatsWebsocketProvider, (previous, next) => next.whenData((data) => ref.read(chatsProvider.notifier).handleWebsocketEvents(data: data)));
 
     return DefaultTabController(
       length: 2,
@@ -87,7 +59,8 @@ class ChatsScreen extends ConsumerWidget {
                 ),
               ),
 
-            const TabBarView(children: [ChatsWidget(), GroupsWidget()]),
+            /// TabBarView
+            const TabBarView(children: [ChatsTabBar(), GroupsTabBar()]),
           ],
         ),
         bottomNavigationBar: const Navbar(),
@@ -97,35 +70,27 @@ class ChatsScreen extends ConsumerWidget {
   }
 }
 
-/// ChatsWidget
-class ChatsWidget extends ConsumerStatefulWidget {
-  const ChatsWidget({super.key});
+/// ChatsTabBar
+class ChatsTabBar extends ConsumerWidget {
+  const ChatsTabBar({super.key});
 
   @override
-  ConsumerState<ChatsWidget> createState() => _ChatsWidgetState();
-}
-
-class _ChatsWidgetState extends ConsumerState<ChatsWidget> {
-  List<ChatModel> _previousChats = [];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final AsyncValue<List<ChatModel>> chats = ref.watch(chatsNotifierProvider);
+    final AsyncValue<List<ChatModel>> chats = ref.watch(chatsProvider);
     return RefreshIndicator(
       color: theme.primaryText,
       backgroundColor: theme.secondaryBackground,
-      onRefresh: () => ref.watch(chatsNotifierProvider.notifier).refresh(),
+      onRefresh: () => ref.watch(chatsProvider.notifier).refresh(),
       child: chats.when(
+        data: (List<ChatModel> chats) {
+          return ChatListWidget(chats: chats, isRefreshing: false);
+        },
         error: (error, stackTrace) {
           if (error is DioException) return Center(child: Text('${error.message}'));
           return Center(child: Text(error.toString()));
         },
-        loading: () => ChatListWidget(chats: _previousChats, isRefreshing: true),
-        data: (List<ChatModel> chats) {
-          _previousChats = chats;
-          return ChatListWidget(chats: chats, isRefreshing: false);
-        },
+        loading: () => ChatListWidget(chats: chats.valueOrNull ?? [], isRefreshing: chats.isLoading && chats.hasValue),
       ),
     );
   }
@@ -197,7 +162,7 @@ class ChatTile extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        ref.read(sharedChat.notifier).state = chat;
+        ref.read(sharedChatProvider.notifier).state = chat;
         context.pushNamed('chat');
       },
       child: Container(
@@ -213,14 +178,14 @@ class ChatTile extends ConsumerWidget {
               /// Avatar
               AvatarWithHoleAnimated(
                 showHole: showHole,
-                holeRadius: 9.dp,
+                holeRadius: 7.dp,
                 avatarRadius: 28.dp,
                 avatarUrl: '${constants.bucketEndpoint}/${chat.participant.avatarUrl}',
                 blurSigma: blurSigma,
               ),
 
               /// Online & Offline status (animated)
-              AnimatedIndicator(showHole: showHole, indicatorSize: 16.dp),
+              AnimatedIndicator(showHole: showHole, indicatorSize: 12.dp),
             ],
           ),
           title: Row(
@@ -240,13 +205,12 @@ class ChatTile extends ConsumerWidget {
           ),
           subtitle: Row(
             children: [
-              // Fading message text with space before icon
               Expanded(
                 child: Text(
-                  '${chat.lastMessage?.message}',
+                  chat.participant.isTyping ? 'typing...' : '${chat.lastMessage?.message}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.quicksand(color: chat.participant.isTyping ? Colors.deepOrangeAccent : theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
                 ),
               ),
 
@@ -320,40 +284,22 @@ class _AvatarWithHoleAnimatedState extends ConsumerState<AvatarWithHoleAnimated>
     final theme = ref.watch(themeProvider);
     return AnimatedBuilder(
       animation: _radiusAnimation,
-      builder: (context, child) {
-        return AvatarWithHole(holeRadius: _radiusAnimation.value, avatarRadius: widget.avatarRadius, avatar: child);
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.avatarRadius),
-        child: ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: widget.blurSigma, sigmaY: widget.blurSigma),
-          child: CachedNetworkImage(
-            imageUrl: widget.avatarUrl,
-            fit: BoxFit.cover,
-            width: 2 * widget.avatarRadius,
-            memCacheWidth: 2 * widget.avatarRadius.cacheSize(context),
-            placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 56.dp, color: theme.primaryText),
-            errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 56.dp, color: theme.primaryText),
+      builder: (context, child) => ClipPath(
+        clipper: CircleHoleClipper(holeRadius: _radiusAnimation.value, avatarRadius: widget.avatarRadius),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(widget.avatarRadius),
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: widget.blurSigma, sigmaY: widget.blurSigma),
+            child: CachedNetworkImage(
+              imageUrl: widget.avatarUrl,
+              fit: BoxFit.cover,
+              memCacheWidth: 2 * widget.avatarRadius.cacheSize(context),
+              placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 51.dp, color: theme.primaryText),
+              errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 51.dp, color: theme.primaryText),
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// AvatarWithHole
-class AvatarWithHole extends StatelessWidget {
-  final double holeRadius;
-  final double avatarRadius;
-  final Widget? avatar;
-
-  const AvatarWithHole({super.key, required this.holeRadius, required this.avatarRadius, required this.avatar});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: CircleHoleClipper(holeRadius: holeRadius, avatarRadius: avatarRadius),
-      child: avatar,
     );
   }
 }
@@ -373,7 +319,7 @@ class CircleHoleClipper extends CustomClipper<Path> {
 
     // 315 degrees == -45 degrees in radians
     final double angle = -pi / 4;
-    final Offset holeCenter = Offset(avatarCenter.dx + avatarRadius * cos(angle), avatarCenter.dy - avatarRadius * sin(angle));
+    final Offset holeCenter = Offset(avatarCenter.dx + avatarRadius * cos(angle) - 1.5.dp, avatarCenter.dy - avatarRadius * sin(angle) - 1.5.dp);
 
     final holePath = Path()..addOval(Rect.fromCircle(center: holeCenter, radius: holeRadius));
 
@@ -452,8 +398,8 @@ class _AnimatedIndicatorState extends State<AnimatedIndicator> with SingleTicker
 }
 
 /// GroupsWidget
-class GroupsWidget extends ConsumerWidget {
-  const GroupsWidget({super.key});
+class GroupsTabBar extends ConsumerWidget {
+  const GroupsTabBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

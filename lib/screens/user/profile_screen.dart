@@ -157,7 +157,7 @@ class ProfileCard extends ConsumerWidget {
                     if (!isFollowingNull)
                       GestureDetector(
                         onTap: () {
-                          ref.read(sharedChat.notifier).state = ChatModel(
+                          ref.read(sharedChatProvider.notifier).state = ChatModel(
                             participant: ParticipantModel(id: user.id, name: user.name, username: user.username),
                           );
                           context.push('/chats/chat');

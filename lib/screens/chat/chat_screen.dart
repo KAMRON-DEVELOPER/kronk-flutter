@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,8 +10,9 @@ import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/riverpod/chat/chat_messages_provider.dart';
 import 'package:kronk/riverpod/chat/chat_state_provider.dart';
 import 'package:kronk/riverpod/chat/chats_provider.dart';
-import 'package:kronk/riverpod/chat/chats_ws_provider.dart';
+import 'package:kronk/riverpod/chat/chats_websocket_provider.dart';
 import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
+import 'package:kronk/riverpod/general/storage_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
@@ -18,187 +20,62 @@ import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
-import 'package:kronk/utility/storage.dart';
 
-final sharedChat = StateProvider<ChatModel?>((ref) => null);
-final inputMessageProvider = StateProvider<String>((ref) => '');
+final sharedChatProvider = StateProvider<ChatModel?>((ref) => null);
+final chatMessageControllerProvider = Provider.autoDispose<TextEditingController>((ref) {
+  final controller = TextEditingController();
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 
-class ChatScreen extends ConsumerStatefulWidget {
+/// ChatScreen
+class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
-
-  @override
-  ConsumerState<ChatScreen> createState() => _ChatScreenState();
-}
-
-class _ChatScreenState extends ConsumerState<ChatScreen> {
-  late Storage _storage;
-  late String userId;
-
-  @override
-  void initState() {
-    super.initState();
-    _storage = Storage();
-    final user = _storage.getUser();
-    userId = user?.id ?? '';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final initialChat = ref.watch(sharedChat);
-    final chat = ref.watch(chatStateProvider(initialChat!));
-    final notifier = ref.watch(chatStateProvider(initialChat).notifier);
-
-    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
-    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
-
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: ChatAppBar(chat: chat),
-      body: Stack(
-        children: [
-          /// Static background images
-          if (isFloating)
-            Positioned(
-              left: 0,
-              top: MediaQuery.of(context).padding.top - 52.dp,
-              right: 0,
-              bottom: 0,
-              child: Opacity(
-                opacity: 0.4,
-                child: Image.asset(
-                  screenStyle.backgroundImage,
-                  fit: BoxFit.cover,
-                  cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 56.dp).cacheSize(context),
-                  cacheWidth: Sizes.screenWidth.cacheSize(context),
-                ),
-              ),
-            ),
-
-          /// Content
-          Column(
-            children: [
-              /// messages
-              Expanded(
-                child: chat.id != null ? ChatMessagesWidget(userId: userId, chatId: chat.id!, notifier: notifier) : const InitialMessageWidget(),
-              ),
-
-              /// input bar
-              ChatInputWidget(userId: userId, chat: chat, notifier: notifier),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ChatMessagesWidget extends ConsumerStatefulWidget {
-  final String userId;
-  final String chatId;
-  final ChatStateStateNotifier notifier;
-
-  const ChatMessagesWidget({super.key, required this.userId, required this.chatId, required this.notifier});
-
-  @override
-  ConsumerState<ChatMessagesWidget> createState() => _ChatMessagesWidgetState();
-}
-
-class _ChatMessagesWidgetState extends ConsumerState<ChatMessagesWidget> {
-  late ScrollController _scrollController;
-  bool _shouldScrollToBottom = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant ChatMessagesWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _shouldScrollToBottom = true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ref.watch(themeProvider);
-    final AsyncValue<List<ChatMessageModel>> messages = ref.watch(chatMessagesProvider(widget.chatId));
-    return messages.when(
-      data: (List<ChatMessageModel> messages) {
-        if (_shouldScrollToBottom) {
-          _scrollToBottom();
-          _shouldScrollToBottom = false;
-        }
-
-        return NotificationListener<ScrollEndNotification>(
-          onNotification: (notification) {
-            return false;
-          },
-          child: RefreshIndicator(
-            color: theme.primaryText,
-            backgroundColor: theme.secondaryBackground,
-            onRefresh: () => ref.read(chatMessagesProvider(widget.chatId).notifier).refresh(chatId: widget.chatId),
-            child: ListView.separated(
-              itemCount: messages.length,
-              padding: EdgeInsets.all(12.dp),
-              itemBuilder: (context, index) => MessageBubble(userId: widget.userId, message: messages.elementAt(index)),
-              separatorBuilder: (context, index) => SizedBox(height: 12.dp),
-            ),
-          ),
-        );
-      },
-      error: (error, stackTrace) => Text(
-        error.toString(),
-        style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      loading: () => Container(
-        width: 32.dp,
-        height: 32.dp,
-        alignment: Alignment.topCenter,
-        padding: EdgeInsets.only(top: 24.dp),
-        child: FittedBox(child: CircularProgressIndicator(color: theme.primaryText)),
-      ),
-    );
-  }
-}
-
-class MessageBubble extends ConsumerWidget {
-  final String userId;
-  final ChatMessageModel message;
-
-  const MessageBubble({super.key, required this.userId, required this.message});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
-    final isSentByUser = message.senderId == userId;
+    final sharedChat = ref.watch(sharedChatProvider);
+    final chat = ref.watch(chatStateProvider(sharedChat!));
 
-    return Row(
-      mainAxisAlignment: isSentByUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
+    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
+
+    return Stack(
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.dp, vertical: 4.dp),
-          alignment: isSentByUser ? Alignment.centerRight : Alignment.centerLeft,
-          decoration: BoxDecoration(
-            color: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
-            borderRadius: BorderRadius.circular(12.dp),
+        /// Static background images
+        if (isFloating)
+          Positioned(
+            left: 0,
+            top: MediaQuery.of(context).padding.top - 52.dp,
+            right: 0,
+            bottom: 0,
+            child: Opacity(
+              opacity: 0.4,
+              child: Image.asset(
+                screenStyle.backgroundImage,
+                fit: BoxFit.cover,
+                cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 56.dp).cacheSize(context),
+                cacheWidth: Sizes.screenWidth.cacheSize(context),
+              ),
+            ),
           ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.6),
-            child: Text(
-              message.message,
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+
+        /// Scaffold
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(statusBarColor: theme.primaryBackground, statusBarIconBrightness: Brightness.dark),
+          child: Scaffold(
+            resizeToAvoidBottomInset: true,
+            backgroundColor: Colors.transparent,
+            appBar: ChatAppBar(chat: chat),
+            body: Column(
+              children: [
+                /// messages
+                Expanded(child: chat.id != null ? const ChatMessagesWidget() : const InitialMessageWidget()),
+
+                /// input bar
+                const ChatInputWidget(),
+              ],
             ),
           ),
         ),
@@ -207,39 +84,206 @@ class MessageBubble extends ConsumerWidget {
   }
 }
 
-class ChatInputWidget extends ConsumerStatefulWidget {
-  final String userId;
-  final ChatModel chat;
-  final ChatStateStateNotifier notifier;
-
-  const ChatInputWidget({super.key, required this.userId, required this.chat, required this.notifier});
+/// ChatMessagesWidget
+class ChatMessagesWidget extends ConsumerStatefulWidget {
+  const ChatMessagesWidget({super.key});
 
   @override
-  ConsumerState<ChatInputWidget> createState() => _ChatInputWidgetState();
+  ConsumerState<ChatMessagesWidget> createState() => _ChatMessagesWidgetState();
 }
 
-class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
-  late TextEditingController messageController;
+class _ChatMessagesWidgetState extends ConsumerState<ChatMessagesWidget> {
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
-    messageController = TextEditingController();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    messageController.dispose();
+    _scrollController.removeListener(_onScroll);
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+      final sharedChat = ref.read(sharedChatProvider);
+      if (sharedChat?.id != null) {
+        ref.read(chatMessagesStateProvider(sharedChat!.id!).notifier).loadMore(chatId: sharedChat.id!);
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider);
-    final String inputMessage = ref.watch(inputMessageProvider);
+    final sharedChat = ref.watch(sharedChatProvider);
+    final chatId = sharedChat?.id ?? '';
+    final chatMessagesState = ref.watch(chatMessagesStateProvider(chatId));
+
+    ref.listen(chatMessagesStateProvider(sharedChat?.id ?? ''), (previous, next) {
+      final prevMessages = previous?.value?.chatMessages ?? [];
+      final nextMessages = next.value?.chatMessages ?? [];
+
+      if (nextMessages.length > prevMessages.length) {
+        if (prevMessages.isEmpty || nextMessages.first.id != prevMessages.first.id) {
+          _scrollToBottom();
+        }
+      }
+    });
+
+    return RefreshIndicator(
+      color: theme.primaryText,
+      backgroundColor: theme.secondaryBackground,
+      onRefresh: () => ref.read(chatMessagesStateProvider(chatId).notifier).refresh(chatId: chatId),
+      child: chatMessagesState.when(
+        data: (chatMessagesState) => Scrollbar(
+          controller: _scrollController,
+          child: ListView.separated(
+            reverse: true,
+            controller: _scrollController,
+            itemCount: chatMessagesState.chatMessages.length + (chatMessagesState.hasMore ? 1 : 0),
+            padding: EdgeInsets.all(12.dp),
+            itemBuilder: (context, index) {
+              if (chatMessagesState.hasMore && index == chatMessagesState.chatMessages.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return ChatMessageBubble(message: chatMessagesState.chatMessages.elementAt(index));
+            },
+            separatorBuilder: (context, index) => SizedBox(height: 12.dp),
+          ),
+        ),
+        error: (error, stackTrace) => Text(
+          error.toString(),
+          style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        loading: () => Container(
+          width: 32.dp,
+          height: 32.dp,
+          alignment: Alignment.topCenter,
+          padding: EdgeInsets.only(top: 24.dp),
+          child: FittedBox(child: CircularProgressIndicator(color: theme.primaryText)),
+        ),
+      ),
+    );
+  }
+}
+
+/// ChatMessageBubble
+class ChatMessageBubble extends ConsumerWidget {
+  final ChatMessageModel message;
+
+  const ChatMessageBubble({super.key, required this.message});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    final storage = ref.watch(storageProvider);
+    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
+    final isSentByUser = message.senderId == storage.getUser()?.id;
+
+    return Row(
+      mainAxisAlignment: isSentByUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        Stack(
+          children: [
+            /// Message
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.dp, vertical: 6.dp),
+              alignment: isSentByUser ? Alignment.centerRight : Alignment.centerLeft,
+              decoration: BoxDecoration(
+                color: (isSentByUser ? theme.tertiaryBackground : theme.primaryBackground).withValues(alpha: screenStyle.opacity),
+                borderRadius: BorderRadius.circular(12.dp),
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                child: RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+                    children: [
+                      TextSpan(text: message.message),
+                      const TextSpan(
+                        text: '12:00 PM',
+                        style: TextStyle(color: Colors.transparent),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            /// Time & read/unread
+            Positioned(
+              right: 6.dp,
+              bottom: 2.dp,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4.dp,
+                children: [
+                  Text(
+                    message.createdAt.toChatTime(),
+                    style: TextStyle(fontSize: 12.dp, color: theme.secondaryText),
+                  ),
+                  Icon(!message.isRead ? Icons.done_all : Icons.done, size: 14.dp, color: theme.secondaryText),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// ChatInputWidget
+class ChatInputWidget extends ConsumerWidget {
+  const ChatInputWidget({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    final storage = ref.watch(storageProvider);
+    final sharedChat = ref.watch(sharedChatProvider);
+    final notifier = ref.watch(chatStateProvider(sharedChat!).notifier);
+    final messageController = ref.watch(chatMessageControllerProvider);
+
+    Future<void> onTap() async {
+      if (messageController.text.isEmpty) return;
+      try {
+        if (sharedChat.id == null) {
+          final ChatModel chat = await ref.read(chatsProvider.notifier).createChat(message: messageController.text.trim(), participantId: sharedChat.participant.id);
+          myLogger.w('chat.id: ${chat.id}, chat.participant.name: ${chat.participant.name}, chat.lastMessage: ${chat.lastMessage}');
+          notifier.updateField(chat: chat);
+          ref.read(chatMessagesStateProvider(chat.id!).notifier).addMessage(lastMessage: chat.lastMessage!);
+        } else {
+          ref
+              .read(chatsWebsocketProvider.notifier)
+              .sendMessage(chatId: sharedChat.id!, userId: storage.getUser()?.id ?? '', participantId: sharedChat.participant.id, message: messageController.text.trim());
+        }
+        messageController.clear();
+      } catch (error) {
+        myLogger.e('Exception while creating chat, e: ${error.toString()}');
+      }
+    }
+
     return SafeArea(
       top: false,
       child: Container(
+        height: 56.dp,
         padding: EdgeInsets.symmetric(horizontal: 16.dp, vertical: 6.dp),
         decoration: BoxDecoration(
           color: theme.primaryBackground,
@@ -250,14 +294,14 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
         child: Row(
           spacing: 16.dp,
           children: [
-            Icon(Icons.emoji_emotions_rounded, size: 26.dp),
+            /// Emoji picker
+            Icon(Icons.emoji_emotions_outlined, size: 26.dp),
+
+            /// Input
             Expanded(
               child: TextField(
                 controller: messageController,
-                onChanged: (value) {
-                  ref.read(inputMessageProvider.notifier).state = value;
-                  // ref.read(chatsWSNotifierProvider.notifier).handleTyping(chatId: widget.chat.id!, text: value); // TODO
-                },
+                onChanged: (value) => ref.read(chatsWebsocketProvider.notifier).handleTyping(chatId: sharedChat.id, text: value),
                 style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 18.dp, fontWeight: FontWeight.w600),
                 cursorColor: theme.primaryText,
                 decoration: InputDecoration(
@@ -270,34 +314,36 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
               ),
             ),
 
-            if (inputMessage.isNotEmpty)
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    if (widget.chat.id == null) {
-                      myLogger.w('GoRouterState.of(context).path: ${GoRouterState.of(context).path}');
-                      final ChatModel chat = await ref.read(chatsNotifierProvider.notifier).createChatMessage(message: inputMessage, participantId: widget.chat.participant.id);
-                      myLogger.w('1 chat.id: ${chat.id}, chat.participant.name: ${chat.participant.name}, chat.lastMessage: ${chat.lastMessage}');
-                      widget.notifier.updateField(chat: chat);
-                      await ref.read(chatMessagesProvider(chat.id!).notifier).addMessage(message: chat.lastMessage!);
-                    } else {
-                      ref
-                          .read(chatsWSNotifierProvider.notifier)
-                          .sendMessage(chatId: widget.chat.id!, userId: widget.userId, participantId: widget.chat.participant.id, message: inputMessage);
-                    }
+            /// Media, send or mic
+            GestureDetector(
+              onLongPressStart: (details) {},
+              onLongPressEnd: (details) {},
+              onTap: onTap,
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: messageController,
+                builder: (context, value, child) {
+                  final hasText = value.text.isNotEmpty;
+                  return Row(
+                    spacing: 16.dp,
+                    children: [
+                      /// Media picker
+                      if (messageController.text.isEmpty) Icon(Icons.attach_file_rounded, size: 26.dp),
 
-                    messageController.clear();
-                    ref.read(inputMessageProvider.notifier).state = '';
-                  } catch (error) {
-                    myLogger.e('Exception while creating chat, e: ${error.toString()}');
-                  }
+                      /// Send & mic
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        reverseDuration: const Duration(milliseconds: 200),
+                        child: Icon(key: ValueKey<bool>(hasText), hasText ? Icons.send_rounded : Icons.mic_none_rounded, size: 26.dp),
+                        transitionBuilder: (child, animation) => ScaleTransition(
+                          scale: animation,
+                          child: FadeTransition(opacity: animation, child: child),
+                        ),
+                      ),
+                    ],
+                  );
                 },
-                child: Icon(Icons.send_rounded, size: 26.dp),
-              )
-            else ...[
-              Icon(Icons.attach_file_rounded, size: 26.dp),
-              Icon(Icons.mic_rounded, size: 26.dp),
-            ],
+              ),
+            ),
           ],
         ),
       ),
@@ -305,6 +351,23 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
   }
 }
 
+/// InitialMessageWidget
+class InitialMessageWidget extends ConsumerWidget {
+  const InitialMessageWidget({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    return Center(
+      child: Text(
+        'Send Message 💬',
+        style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 24.dp, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+/// ChatAppBar
 class ChatAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final ChatModel chat;
 
@@ -369,7 +432,11 @@ class ChatAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w500, height: 0),
                       ),
                       Text(
-                        chat.participant.isOnline ? 'Online' : 'Offline',
+                        chat.participant.isTyping
+                            ? 'typing...'
+                            : chat.participant.isOnline
+                            ? 'Online'
+                            : 'Offline',
                         style: GoogleFonts.quicksand(
                           color: chat.participant.isOnline ? Colors.deepOrangeAccent : theme.secondaryText,
                           fontSize: 12.dp,
@@ -391,20 +458,6 @@ class ChatAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class InitialMessageWidget extends ConsumerWidget {
-  const InitialMessageWidget({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Text(
-        'Send Message 💬',
-        style: GoogleFonts.quicksand(fontSize: 24.dp, fontWeight: FontWeight.w600),
       ),
     );
   }

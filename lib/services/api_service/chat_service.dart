@@ -4,6 +4,7 @@ import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/interceptors.dart';
 import 'package:kronk/utility/my_logger.dart';
+import 'package:tuple/tuple.dart';
 
 BaseOptions getChatBaseOptions() {
   return BaseOptions(baseUrl: '${constants.apiEndpoint}/chats', contentType: 'application/json', validateStatus: (int? status) => true);
@@ -36,7 +37,7 @@ class ChatService {
     }
   }
 
-  Future<List<ChatModel>> getChats({int start = 0, int end = 20}) async {
+  Future<List<ChatModel>> getChats({int start = 0, int end = 40}) async {
     try {
       Response response = await _dio.get('');
       final data = response.data['chats'] as List;
@@ -47,13 +48,14 @@ class ChatService {
     }
   }
 
-  Future<List<ChatMessageModel>> getMessages({required String chatId, int start = 0, int end = 20}) async {
+  Future<Tuple2<List<ChatMessageModel>, int>> getMessages({required String chatId, int offset = 0, int limit = 20}) async {
     try {
-      Response response = await _dio.get('/messages', queryParameters: {'chat_id': chatId});
-      myLogger.i('🚀 response.data in getChats: ${response.data}  statusCode: ${response.statusCode}');
-      final data = response.data['messages'];
-      if (data is List) return data.map((json) => ChatMessageModel.fromJson(json)).toList();
-      return [];
+      Response response = await _dio.get('/messages', queryParameters: {'chat_id': chatId, 'offset': offset, 'limit': limit});
+      final data = response.data['messages'] as List;
+      final total = response.data['total'] as int;
+
+      final chatMessages = data.map((json) => ChatMessageModel.fromJson(json)).toList();
+      return Tuple2(chatMessages, total);
     } catch (error) {
       myLogger.w('catch in getChats: ${error.toString()}');
       rethrow;

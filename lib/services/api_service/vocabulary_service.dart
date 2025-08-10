@@ -41,6 +41,7 @@ class VocabularyService {
       Response response = await _dio.get('', queryParameters: {'offset': offset, 'limit': limit});
       final data = response.data['vocabularies'] as List;
       final total = response.data['total'] as int;
+
       final vocabularies = data.map((json) => VocabularyModel.fromJson(json)).toList();
       return Tuple2(vocabularies, total);
     } catch (error) {

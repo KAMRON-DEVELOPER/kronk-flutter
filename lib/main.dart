@@ -7,7 +7,6 @@ import 'package:kronk/riverpod/general/navbar_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
-import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/router.dart';
 import 'package:kronk/utility/setup.dart';
 import 'package:kronk/widgets/navbar.dart';
@@ -16,13 +15,6 @@ final googleSignIn = GoogleSignIn.instance;
 
 void main() async {
   String initialLocation = await setup();
-
-  assert(() {
-    debugInvertOversizedImages = true;
-    return true;
-  }());
-
-  myLogger.w('initialLocation: $initialLocation');
   final GoRouter router = AppRouter(initialLocation: initialLocation).router;
 
   runApp(ProviderScope(child: MyApp(router: router)));

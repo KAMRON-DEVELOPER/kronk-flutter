@@ -72,5 +72,10 @@ Future<String> setup() async {
 
   VisibilityDetectorController.instance.updateInterval = const Duration(milliseconds: 200);
 
+  assert(() {
+    debugInvertOversizedImages = true;
+    return true;
+  }());
+
   return await storage.getRouteAsync();
 }

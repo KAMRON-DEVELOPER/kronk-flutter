@@ -32,7 +32,6 @@ class FeedsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
     final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
     final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
@@ -116,7 +115,6 @@ class TimelineTab extends ConsumerStatefulWidget {
 class _TimelineTabState extends ConsumerState<TimelineTab> with AutomaticKeepAliveClientMixin {
   late ScrollController _scrollController;
   final GlobalKey<RefreshIndicatorState> _refreshKey = GlobalKey();
-  List<FeedModel> _previousFeeds = [];
 
   @override
   void initState() {
@@ -198,9 +196,8 @@ class _TimelineTabState extends ConsumerState<TimelineTab> with AutomaticKeepAli
               if (error is DioException) return Center(child: Text('${error.message}'));
               return Center(child: Text('$error'));
             },
-            loading: () => FeedListWidget(feeds: _previousFeeds, controller: _scrollController, isRefreshing: true),
+            loading: () => FeedListWidget(feeds: feeds.valueOrNull ?? [], controller: _scrollController, isRefreshing: feeds.isLoading && feeds.hasValue),
             data: (List<FeedModel> feeds) {
-              _previousFeeds = feeds;
               return FeedListWidget(feeds: feeds, controller: _scrollController);
             },
           ),

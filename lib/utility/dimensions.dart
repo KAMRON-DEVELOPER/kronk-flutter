@@ -226,6 +226,7 @@ class Sizes {
   static double baseWidth = 392.7272;
   static late double screenWidth;
   static late double screenHeight;
+  static late double devicePixelRatio;
   static late double s2;
   static late double s4;
   static late double s6;
@@ -246,6 +247,8 @@ class Sizes {
     screenHeight = MediaQuery.of(context).size.height;
 
     double scale(num value) => screenWidth / baseWidth * value;
+
+    devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
 
     s2 = scale(2);
     s4 = scale(4);

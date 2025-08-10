@@ -22,13 +22,19 @@ class EngagementStatus {
 // enum ReportReason { intellectualProperty, spam, inappropriate, misinformation, harassment, hateSpeech, violence, other }
 
 enum ReportReason {
+  // ignore: constant_identifier_names
   copyright_infringement,
   spam,
+  // ignore: constant_identifier_names
   nudity_or_sexual_content,
   misinformation,
+  // ignore: constant_identifier_names
   harassment_or_bullying,
+  // ignore: constant_identifier_names
   hate_speech,
+  // ignore: constant_identifier_names
   violence_or_threats,
+  // ignore: constant_identifier_names
   self_harm_or_suicide,
   impersonation,
   other;
@@ -59,6 +65,6 @@ enum UserStatus { active, inactive }
 
 enum FollowPolicy { autoAccept, manualApproval }
 
-enum ChatEvent { typingStart, typingStop, goesOnline, goesOffline, enterChat, exitChat, createdChat, sentMessage, heartbeatAck, heartbeat, wrongType }
+enum ChatEvent { goesOnline, goesOffline, typingStart, typingStop, createdChat, sentMessage, heartbeatAck, heartbeat, wrongType }
 
 enum CropImageFor { avatar, banner }

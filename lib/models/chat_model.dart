@@ -7,8 +7,9 @@ class ParticipantModel {
   final String? avatarUrl;
   final DateTime? lastSeenAt;
   final bool isOnline;
+  final bool isTyping;
 
-  ParticipantModel({required this.id, required this.name, required this.username, this.avatarUrl, this.lastSeenAt, this.isOnline = false});
+  ParticipantModel({required this.id, required this.name, required this.username, this.avatarUrl, this.lastSeenAt, this.isOnline = false, this.isTyping = false});
 
   factory ParticipantModel.fromJson(Map<String, dynamic> json) {
     return ParticipantModel(
@@ -18,11 +19,20 @@ class ParticipantModel {
       avatarUrl: json['avatar_url'],
       lastSeenAt: json['last_seen_at'] != null ? DateTime.fromMillisecondsSinceEpoch((json['last_seen_at'] as int) * 1000) : null,
       isOnline: json['is_online'] ?? false,
+      isTyping: json['is_typing'] ?? false,
     );
   }
 
-  ParticipantModel copyWith({DateTime? lastSeenAt, bool? isOnline}) {
-    return ParticipantModel(id: id, name: name, username: username, avatarUrl: avatarUrl, lastSeenAt: lastSeenAt ?? this.lastSeenAt, isOnline: isOnline ?? this.isOnline);
+  ParticipantModel copyWith({DateTime? lastSeenAt, bool? isOnline, bool? isTyping}) {
+    return ParticipantModel(
+      id: id,
+      name: name,
+      username: username,
+      avatarUrl: avatarUrl,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      isOnline: isOnline ?? this.isOnline,
+      isTyping: isTyping ?? this.isTyping,
+    );
   }
 }
 

@@ -164,4 +164,11 @@ extension ChatDateFormat on DateTime {
       return DateFormat('M/d/yy').format(this); // "7/16/25"
     }
   }
+
+  String toChatTime() {
+    final hour = this.hour % 12 == 0 ? 12 : this.hour % 12;
+    final minute = this.minute.toString().padLeft(2, '0');
+    final period = this.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
 }
