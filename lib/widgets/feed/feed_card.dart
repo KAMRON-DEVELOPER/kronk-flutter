@@ -112,49 +112,54 @@ class FeedHeaderSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         /// Left side items (avatar + name + time)
-        Row(
-          spacing: 8.dp,
-          children: [
-            /// Avatar
-            GestureDetector(
-              onTap: () {
-                final Storage storage = Storage();
-                final UserModel? user = storage.getUser();
-                if (user?.id == feed.author.id) {
-                  context.go('/profile');
-                } else {
-                  context.pushNamed('previewProfile', extra: feed.author.id);
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.dp),
-                child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-                  child: CachedNetworkImage(
-                    imageUrl: '${constants.bucketEndpoint}/$avatarUrl',
-                    fit: BoxFit.cover,
-                    width: 32.dp,
-                    memCacheWidth: 32.cacheSize(context),
-                    placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
-                    errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
+        Expanded(
+          child: Row(
+            spacing: 8.dp,
+            children: [
+              /// Avatar
+              GestureDetector(
+                onTap: () {
+                  final Storage storage = Storage();
+                  final UserModel? user = storage.getUser();
+                  if (user?.id == feed.author.id) {
+                    context.go('/profile');
+                  } else {
+                    context.pushNamed('previewProfile', extra: feed.author.id);
+                  }
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.dp),
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                    child: CachedNetworkImage(
+                      imageUrl: '${constants.bucketEndpoint}/$avatarUrl',
+                      fit: BoxFit.cover,
+                      width: 32.dp,
+                      memCacheWidth: 32.cacheSize(context),
+                      placeholder: (context, url) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
+                      errorWidget: (context, url, error) => Icon(Icons.account_circle_rounded, size: 32.dp, color: theme.primaryText),
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            /// Name
-            Text(
-              '${feed.author.name}',
-              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
-            ),
-
-            /// timeAgoShort
-            if (!isEditable)
-              Text(
-                FeedModel.timeAgoShort(dateTime: feed.createdAt!),
-                style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+              /// Name
+              Flexible(
+                child: Text(
+                  '${feed.author.name}',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+                ),
               ),
-          ],
+
+              /// timeAgoShort
+              if (!isEditable)
+                Text(
+                  FeedModel.timeAgoShort(dateTime: feed.createdAt!),
+                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+                ),
+            ],
+          ),
         ),
 
         /// FeedCardMenuButton

@@ -51,7 +51,7 @@ class _NavbarState extends ConsumerState<Navbar> {
     final double itemWidth = fitsWithoutScroll ? screenWidth / count : screenWidth / maxIconsInScreen;
 
     return Container(
-      height: 56.dp,
+      height: 72.dp,
       decoration: BoxDecoration(
         color: theme.primaryBackground,
         border: Border(

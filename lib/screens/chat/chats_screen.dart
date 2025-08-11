@@ -191,9 +191,12 @@ class ChatTile extends ConsumerWidget {
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                chat.participant.name,
-                style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
+              Flexible(
+                child: Text(
+                  chat.participant.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 16.dp, fontWeight: FontWeight.w500),
+                ),
               ),
 
               if (chat.lastActivityAt != null)

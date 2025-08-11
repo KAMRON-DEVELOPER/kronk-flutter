@@ -61,6 +61,12 @@ class ChatScreen extends ConsumerWidget {
             ),
           ),
 
+        /// cover with color the appbar background color in IOS
+        Container(
+          height: MediaQuery.of(context).padding.top,
+          color: theme.primaryBackground,
+        ),
+
         /// Scaffold
         AnnotatedRegion<SystemUiOverlayStyle>(
           value: SystemUiOverlayStyle(statusBarColor: theme.primaryBackground, statusBarIconBrightness: Brightness.dark),
