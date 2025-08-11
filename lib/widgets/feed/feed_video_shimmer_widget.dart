@@ -8,8 +8,7 @@ import 'package:kronk/utility/extensions.dart';
 import 'package:shimmer/shimmer.dart';
 
 class FeedVideoShimmerWidget extends ConsumerWidget {
-  final double aspectRatio;
-  const FeedVideoShimmerWidget({super.key, required this.aspectRatio});
+  const FeedVideoShimmerWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +21,7 @@ class FeedVideoShimmerWidget extends ConsumerWidget {
       child: Shimmer.fromColors(
         baseColor: Colors.red,
         highlightColor: activeTheme.primaryText.withValues(alpha: screenStyle.opacity),
-        child: SizedBox(width: videoWidth, height: videoWidth / aspectRatio),
+        child: SizedBox(width: videoWidth),
       ),
     );
   }

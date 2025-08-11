@@ -227,6 +227,7 @@ class FeedListWidget extends ConsumerWidget {
     return Scrollbar(
       controller: controller,
       child: CustomScrollView(
+        cacheExtent: 3000,
         controller: controller,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [

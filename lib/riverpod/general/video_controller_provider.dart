@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/riverpod/general/video_overlay_provider.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
-import 'package:kronk/utility/my_logger.dart';
 import 'package:video_player/video_player.dart';
 
 final videoControllerProvider = AutoDisposeAsyncNotifierProviderFamily<VideoControllerNotifier, VideoPlayerController, VideoSourceState>(VideoControllerNotifier.new);
@@ -14,7 +13,6 @@ class VideoControllerNotifier extends AutoDisposeFamilyAsyncNotifier<VideoPlayer
 
   @override
   Future<VideoPlayerController> build(VideoSourceState videoSource) async {
-    myLogger.d('videoSource.videoUrl: ${videoSource.videoUrl}');
     _videoSource = videoSource;
     final url = '${constants.bucketEndpoint}/${videoSource.videoUrl}';
     final controller = videoSource.videoUrl != null ? VideoPlayerController.networkUrl(Uri.parse(url)) : VideoPlayerController.file(videoSource.videoFile!);

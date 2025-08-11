@@ -55,7 +55,7 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
 
       if (hasVideo) {
         final String? mimeType = lookupMimeType(feed.videoFile!.path);
-        map['video_aspect_ratio'] = 1;
+        map['video_aspect_ratio'] = feed.videoAspectRatio;
         map['video_file'] = await MultipartFile.fromFile(
           feed.videoFile!.path,
           filename: feed.videoFile!.path.split('/').last,
@@ -65,7 +65,7 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
 
       if (hasImage) {
         final String? mimeType = lookupMimeType(feed.imageFile!.path);
-        map['image_aspect_ratio'] = 1;
+        map['image_aspect_ratio'] = feed.imageAspectRatio;
         map['image_file'] = await MultipartFile.fromFile(
           feed.imageFile!.path,
           filename: feed.imageFile!.path.split('/').last,
@@ -78,20 +78,6 @@ class FeedCardStateNotifier extends AutoDisposeFamilyNotifier<FeedModel, FeedMod
       myLogger.d('jsonResponse.data: ${jsonResponse.data}, statusCode: ${jsonResponse.statusCode}');
 
       final Map<String, dynamic> data = jsonResponse.data;
-
-      // final newFeed = state.copyWith(
-      //   id: data['id'],
-      //   createdAt: DateTime.fromMillisecondsSinceEpoch((data['created_at'] * 1000).toInt()),
-      //   updatedAt: DateTime.fromMillisecondsSinceEpoch((data['updated_at'] * 1000).toInt()),
-      //   body: data['body'],
-      //   author: AuthorModel.fromJson(data['author']),
-      //   feedVisibility: FeedVisibility.values.byName(data['feed_visibility']),
-      //   commentPolicy: CommentPolicy.values.byName(data['comment_policy']),
-      //   videoAspectRatio: data['video_aspect_ratio'],
-      //   imageAspectRatio: data['image_aspect_ratio'],
-      //   feedMode: FeedMode.view,
-      //   isLoading: false,
-      // );
 
       final newFeed = FeedModel.fromJson(data).copyWith(feedMode: FeedMode.view, isLoading: false);
 

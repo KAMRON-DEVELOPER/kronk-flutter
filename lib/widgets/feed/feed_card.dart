@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,17 +38,26 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// FeedCard
-class FeedCard extends ConsumerWidget {
+class FeedCard extends ConsumerStatefulWidget {
   final FeedModel initialFeed;
   final bool isRefreshing;
 
   const FeedCard({super.key, required this.initialFeed, required this.isRefreshing});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FeedCard> createState() => _FeedCardState();
+}
+
+class _FeedCardState extends ConsumerState<FeedCard> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
     final theme = ref.watch(themeProvider);
-    final FeedModel feed = ref.watch(feedCardStateProvider(initialFeed));
-    final FeedCardStateNotifier notifier = ref.read(feedCardStateProvider(initialFeed).notifier);
+    final FeedModel feed = ref.watch(feedCardStateProvider(widget.initialFeed));
+    final FeedCardStateNotifier notifier = ref.read(feedCardStateProvider(widget.initialFeed).notifier);
 
     final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
     final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
@@ -69,10 +79,10 @@ class FeedCard extends ConsumerWidget {
             spacing: 8.dp,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FeedHeaderSection(feed: feed, notifier: notifier, isRefreshing: isRefreshing),
+              FeedHeaderSection(feed: feed, notifier: notifier, isRefreshing: widget.isRefreshing),
               FeedBodySection(feed: feed, notifier: notifier),
-              FeedMediaSection(feed: feed, notifier: notifier, isRefreshing: isRefreshing),
-              if (isEditable) FeedControl(initialFeed: initialFeed),
+              FeedMediaSection(feed: feed, notifier: notifier, isRefreshing: widget.isRefreshing),
+              if (isEditable) FeedControl(initialFeed: widget.initialFeed),
               FeedActionSection(feed: feed, notifier: notifier),
             ],
           ),
@@ -501,12 +511,12 @@ class FeedVideoWidget extends ConsumerWidget {
 
     final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
     double blurSigma = isRefreshing ? 3 : 0;
-    final videoAspectRatio = feed.videoAspectRatio!;
-    final isTall = videoAspectRatio < 0.8;
-    final aspectRatio = isTall ? 0.8 : videoAspectRatio;
 
     return videoController.when(
       data: (VideoPlayerController controller) {
+        final videoAspectRatio = controller.value.aspectRatio;
+        final isTall = videoAspectRatio < 0.8;
+        final aspectRatio = isTall ? 0.8 : videoAspectRatio;
         return Stack(
           alignment: Alignment.center,
           children: [
@@ -618,7 +628,7 @@ class FeedVideoWidget extends ConsumerWidget {
           ],
         );
       },
-      loading: () => FeedVideoShimmerWidget(aspectRatio: aspectRatio),
+      loading: () => AspectRatio(aspectRatio: feed.videoAspectRatio ?? 4 / 3, child: const FeedVideoShimmerWidget()),
       error: (error, _) {
         myLogger.e('error: $error');
         return const FeedVideoErrorWidget();
@@ -644,75 +654,65 @@ class FeedImageWidget extends ConsumerWidget {
     final double imageWidth = Sizes.screenWidth - 40.dp;
 
     final imageUrl = '${constants.bucketEndpoint}/${feed.imageUrl}';
-    return FutureBuilder<Size>(
-      future: feed.imageFile != null ? getFileImageSize(feed.imageFile!) : getNetworkImageSize(imageUrl),
-      builder: (context, snapshot) {
-        final double imageHeight = snapshot.hasData ? (imageWidth * snapshot.data!.height / snapshot.data!.width) : imageWidth * 9 / 16;
-
-        return Stack(
-          children: [
-            /// Actual image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.dp),
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-                child: InteractiveViewer(
-                  scaleEnabled: true,
-                  panEnabled: true,
-                  child: feed.removeImage || feed.imageFile != null
-                      ? Image.file(feed.imageFile!, width: imageWidth, height: imageHeight, cacheWidth: imageWidth.cacheSize(context), cacheHeight: imageHeight.cacheSize(context))
-                      : CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          width: imageWidth,
-                          height: imageHeight,
-                          memCacheWidth: imageWidth.cacheSize(context),
-                          memCacheHeight: imageHeight.cacheSize(context),
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) => Container(
-                            width: imageWidth,
-                            height: imageHeight,
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(8.dp),
-                              border: Border.all(color: theme.outline),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            width: imageWidth,
-                            height: imageHeight,
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(8.dp),
-                              border: Border.all(color: theme.outline),
-                            ),
+    return Stack(
+      children: [
+        /// Actual image
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10.dp),
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+            child: AspectRatio(
+              aspectRatio: feed.imageAspectRatio ?? 4 / 3,
+              child: InteractiveViewer(
+                scaleEnabled: true,
+                panEnabled: true,
+                child: feed.removeImage || feed.imageFile != null
+                    ? Image.file(feed.imageFile!, width: imageWidth, cacheWidth: imageWidth.cacheSize(context))
+                    : CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: imageWidth,
+                        memCacheWidth: imageWidth.cacheSize(context),
+                        fit: BoxFit.fitWidth,
+                        placeholder: (context, url) => Container(
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8.dp),
+                            border: Border.all(color: theme.outline),
                           ),
                         ),
-                ),
+                        errorWidget: (context, url, error) => Container(
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(8.dp),
+                            border: Border.all(color: theme.outline),
+                          ),
+                        ),
+                      ),
               ),
             ),
+          ),
+        ),
 
-            /// Delete button
-            if (isEditable)
-              Positioned(
-                top: 8.dp,
-                right: 8.dp,
-                child: GestureDetector(
-                  onTap: () {
-                    if (feed.imageFile != null) {
-                      notifier.updateField(feed: feed.copyWith(imageFile: null, imageUrl: null));
-                    } else {
-                      notifier.updateField(feed: feed.copyWith(removeImage: true));
-                    }
-                  },
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(color: theme.primaryBackground.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12.dp)),
-                    child: Icon(Icons.close_rounded, color: theme.secondaryText, size: 24.dp),
-                  ),
-                ),
+        /// Delete button
+        if (isEditable)
+          Positioned(
+            top: 8.dp,
+            right: 8.dp,
+            child: GestureDetector(
+              onTap: () {
+                if (feed.imageFile != null) {
+                  notifier.updateField(feed: feed.copyWith(imageFile: null, imageUrl: null));
+                } else {
+                  notifier.updateField(feed: feed.copyWith(removeImage: true));
+                }
+              },
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: theme.primaryBackground.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12.dp)),
+                child: Icon(Icons.close_rounded, color: theme.secondaryText, size: 24.dp),
               ),
-          ],
-        );
-      },
+            ),
+          ),
+      ],
     );
   }
 }
@@ -730,16 +730,26 @@ class AddMediaWidget extends ConsumerWidget {
     final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
     return GestureDetector(
       onTap: () async {
-        final picker = ImagePicker();
-        final XFile? pickedFile = await picker.pickMedia();
-        if (pickedFile == null) return;
+        try {
+          final picker = ImagePicker();
+          final XFile? pickedFile = await picker.pickMedia();
+          if (pickedFile == null) return;
 
-        final bool isImage = lookupMimeType(pickedFile.path)?.startsWith('image/') ?? false;
+          final bool isImage = lookupMimeType(pickedFile.path)?.startsWith('image/') ?? false;
 
-        if (isImage) {
-          notifier.updateField(feed: feed.copyWith(imageFile: File(pickedFile.path)));
-        } else {
-          notifier.updateField(feed: feed.copyWith(videoFile: File(pickedFile.path)));
+          if (isImage) {
+            final double imageAspectRatio = await getImageAspectRatio(pickedFile);
+            notifier.updateField(
+              feed: feed.copyWith(imageFile: File(pickedFile.path), imageAspectRatio: imageAspectRatio),
+            );
+          } else {
+            final double videoAspectRatio = await getVideoAspectRatio(pickedFile);
+            notifier.updateField(
+              feed: feed.copyWith(videoFile: File(pickedFile.path), videoAspectRatio: videoAspectRatio),
+            );
+          }
+        } catch (error) {
+          myLogger.e('Error while getting file aspect ratio');
         }
       },
       child: Container(
@@ -884,6 +894,7 @@ class FeedControl extends ConsumerWidget {
               onTap: () async {
                 if (feed.isLoading) return;
                 try {
+                  if (feed.body == null || feed.body == null || feed.body!.isEmpty) return;
                   if (feed.feedMode == FeedMode.create) await notifier.save();
                   if (feed.feedMode == FeedMode.update) await notifier.update();
                 } catch (e) {
@@ -960,26 +971,37 @@ class FeedActionRow extends ConsumerWidget {
   }
 }
 
-Future<Size> getFileImageSize(File file) async {
-  final bytes = await file.readAsBytes();
-  final codec = await ui.instantiateImageCodec(bytes);
-  final frame = await codec.getNextFrame();
-  return Size(frame.image.width.toDouble(), frame.image.height.toDouble());
+Future<double> getVideoAspectRatio(XFile videoFile) async {
+  final controller = VideoPlayerController.file(File(videoFile.path));
+
+  try {
+    await controller.initialize();
+
+    final double aspectRatio = controller.value.aspectRatio;
+
+    return aspectRatio;
+  } catch (e) {
+    myLogger.w('Error getting video aspect ratio: $e');
+    return 16 / 9;
+  } finally {
+    await controller.dispose();
+  }
 }
 
-Future<Size> getNetworkImageSize(String url) async {
-  final Completer<Size> completer = Completer();
-  final Image image = Image.network(url);
-  image.image
-      .resolve(const ImageConfiguration())
-      .addListener(
-        ImageStreamListener((ImageInfo info, bool _) {
-          final myImage = info.image;
-          final size = Size(myImage.width.toDouble(), myImage.height.toDouble());
-          completer.complete(size);
-        }),
-      );
-  return completer.future;
+Future<double> getImageAspectRatio(XFile imageFile) async {
+  try {
+    final Uint8List bytes = await imageFile.readAsBytes();
+
+    final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+    final ui.FrameInfo frameInfo = await codec.getNextFrame();
+    final ui.Image image = frameInfo.image;
+
+    if (image.height == 0) return 1.0;
+
+    return image.width.toDouble() / image.height.toDouble();
+  } catch (error) {
+    rethrow;
+  }
 }
 
 void showFeedAdditionalSettingsModal({required BuildContext context, required FeedModel initialFeed, required Color backgroundColor}) {
