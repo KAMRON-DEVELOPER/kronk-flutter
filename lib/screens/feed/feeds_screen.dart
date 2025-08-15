@@ -230,6 +230,7 @@ class FeedListWidget extends ConsumerWidget {
         cacheExtent: 3000,
         controller: controller,
         physics: const AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         slivers: [
           if (feeds.isEmpty && !isRefreshing)
             SliverFillRemaining(

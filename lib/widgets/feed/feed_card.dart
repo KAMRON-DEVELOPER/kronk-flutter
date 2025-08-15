@@ -237,9 +237,6 @@ class _FeedBodyInputWidgetState extends ConsumerState<FeedBodyInputWidget> {
       onChanged: (value) {
         widget.notifier.updateField(feed: widget.feed.copyWith(body: value));
       },
-      onEditingComplete: () {
-        FocusScope.of(context).unfocus();
-      },
     );
   }
 }
