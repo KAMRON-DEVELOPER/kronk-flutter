@@ -219,11 +219,6 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
             await storage.setTempAppleInfo(email: credential.email, name: name);
           }
 
-          if (credential.email == null || credential.email!.isEmpty) {
-            emit(const AuthFailure(failureMessage: 'Please complete Apple Sign In without cancelling the first time.'));
-            return;
-          }
-
           final OAuthProvider oAuthProvider = OAuthProvider('apple.com');
           final OAuthCredential appleAuthCredential = oAuthProvider.credential(idToken: credential.identityToken, rawNonce: rawNonce, accessToken: credential.authorizationCode);
 
