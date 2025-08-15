@@ -12,6 +12,7 @@ import 'package:kronk/services/api_service/user_service.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:tuple/tuple.dart';
 
 import 'authentication_event.dart';
 import 'authentication_state.dart';
@@ -188,7 +189,6 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
 
   Future<void> _appleAuthEvent(AppleAuthEvent event, Emitter<AuthenticationState> emit) async {
     final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
-
     emit(AuthLoading());
 
     try {
@@ -204,59 +204,88 @@ class AuthenticationBloc extends Bloc<AuthenticationEvent, AuthenticationState> 
 
           final UserCredential userCredential = await firebaseAuth.signInWithProvider(appleProvider);
           authorizationCode = userCredential.additionalUserInfo?.authorizationCode;
-          myLogger.d('userCredential.user?.displayName: ${userCredential.user?.displayName}');
-          myLogger.d('userCredential.additionalUserInfo?.authorizationCode: ${userCredential.additionalUserInfo?.authorizationCode}');
+          firebaseUser = userCredential.user;
         } else {
           final rawNonce = generateNonce();
           final nonce = _sha256ofString(rawNonce);
-          final AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
+          AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
             scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
             nonce: nonce,
           );
 
-          myLogger.d('1 credential: $credential');
-          myLogger.d('2 credential.email: ${credential.email}');
-          myLogger.d('3 credential.givenName: ${credential.givenName}');
-          myLogger.d('4 credential.authorizationCode: ${credential.authorizationCode}');
-          myLogger.d('5 credential.identityToken: ${credential.identityToken}');
+          if (credential.email != null || credential.givenName != null) {
+            final name = '${credential.givenName ?? ''} ${credential.familyName ?? ''}'.trim();
+            myLogger.i('🍎 Got user details from Apple. Saving temporarily: Email: ${credential.email}, Name: $name');
+            await storage.setTempAppleInfo(email: credential.email, name: name);
+          }
+
+          if (credential.email == null || credential.email!.isEmpty) {
+            emit(const AuthFailure(failureMessage: 'Please complete Apple Sign In without cancelling the first time.'));
+            return;
+          }
 
           final OAuthProvider oAuthProvider = OAuthProvider('apple.com');
-          final OAuthCredential appleAuthCredential = oAuthProvider.credential(
-            idToken: credential.identityToken,
-            rawNonce: Platform.isIOS ? rawNonce : null,
-            accessToken: credential.authorizationCode,
-            // accessToken: Platform.isIOS ? null : credential.authorizationCode,
-          );
+          final OAuthCredential appleAuthCredential = oAuthProvider.credential(idToken: credential.identityToken, rawNonce: rawNonce, accessToken: credential.authorizationCode);
 
           final UserCredential userCredential = await firebaseAuth.signInWithCredential(appleAuthCredential);
           authorizationCode = userCredential.additionalUserInfo?.authorizationCode;
           firebaseUser = userCredential.user;
-          myLogger.d('userCredential.user?.displayName: ${userCredential.user?.displayName}');
-          myLogger.d('userCredential.additionalUserInfo?.authorizationCode: ${userCredential.additionalUserInfo?.authorizationCode}');
         }
       }
 
-      final String? idToken = await firebaseUser?.getIdToken();
-      myLogger.d('idToken: $idToken');
+      if (firebaseUser == null) {
+        emit(const AuthFailure(failureMessage: '🥶 Could not sign in with Apple. User is null.'));
+        return;
+      }
 
-      Response? response = await userService.fetchSocialAuth(idToken: idToken, authorizationCode: authorizationCode);
+      final String? idToken = await firebaseUser.getIdToken();
+      myLogger.d('Firebase ID Token acquired.');
+
+      final Tuple2<String?, String?> appleInfo = await storage.getTempAppleInfo();
+      myLogger.d('Retrieved temporary Apple info: $appleInfo');
+
+      Response? response = await userService.fetchSocialAuth(idToken: idToken, authorizationCode: authorizationCode, email: appleInfo.item1, name: appleInfo.item2);
 
       if (response.statusCode == 200) {
+        myLogger.i('✅ Backend sync successful.');
+        await storage.clearTempAppleInfo();
         await storage.setSettingsAllAsync({...response.data['tokens'], 'isDoneWelcome': true, 'authProvider': AuthProvider.apple.name});
         await storage.setUserAsync(user: UserModel.fromJson(response.data['user']));
 
         emit(AppleAuthSuccess());
         return;
       } else {
-        myLogger.w('🎃 social auth is failed!');
-        emit(const AuthFailure(failureMessage: '🥶 Server error occurred while social auth.'));
+        myLogger.w('Social auth failed with status code: ${response.statusCode}');
+        emit(const AuthFailure(failureMessage: '🥶 Server error occurred during social auth.'));
       }
-    } on GoogleSignInException catch (e) {
-      myLogger.e('GoogleSignInException e: $e');
-      emit(const AuthFailure(failureMessage: 'Google Sign In Error'));
+    } on SignInWithAppleAuthorizationException catch (e) {
+      switch (e.code) {
+        case AuthorizationErrorCode.canceled:
+          emit(const AuthFailure(failureMessage: 'Apple Sign In was cancelled'));
+          break;
+        case AuthorizationErrorCode.failed:
+          emit(const AuthFailure(failureMessage: 'Apple Sign In failed. Please try again.'));
+          break;
+        case AuthorizationErrorCode.invalidResponse:
+          emit(const AuthFailure(failureMessage: 'Invalid response from Apple Sign In'));
+          break;
+        case AuthorizationErrorCode.notHandled:
+          emit(const AuthFailure(failureMessage: 'Apple Sign In not handled. Please ensure you are signed into your Apple ID in Settings.'));
+          break;
+        case AuthorizationErrorCode.notInteractive:
+          emit(const AuthFailure(failureMessage: 'Apple Sign In requires user interaction'));
+          break;
+        case AuthorizationErrorCode.unknown:
+        default:
+          emit(const AuthFailure(failureMessage: 'Unknown Apple Sign In error occurred'));
+          break;
+      }
+    } on FirebaseAuthException catch (e) {
+      myLogger.e('FirebaseAuthException: ${e.code} - ${e.message}');
+      emit(AuthFailure(failureMessage: 'Authentication error: ${e.message}'));
     } catch (e) {
-      myLogger.w('🥶 Google Sign In Error: $e');
-      emit(const AuthFailure(failureMessage: '🥶 Something went wrong'));
+      myLogger.e('🥶 Apple Sign In Error: $e');
+      emit(const AuthFailure(failureMessage: 'An unexpected error occurred during Apple sign in.'));
     }
   }
 

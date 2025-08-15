@@ -104,9 +104,13 @@ class UserService {
     }
   }
 
-  Future<Response> fetchSocialAuth({String? idToken, String? authorizationCode}) async {
+  Future<Response> fetchSocialAuth({String? idToken, String? authorizationCode, String? email, String? name}) async {
     try {
-      Response response = await _dio.post('/auth/social', queryParameters: {'id_token': idToken, 'authorization_code': authorizationCode});
+      Map<String, dynamic> queryParameters = {'id_token': idToken};
+      if (authorizationCode != null) queryParameters['authorization_code'] = authorizationCode;
+      if (authorizationCode != null) queryParameters['email'] = email;
+      if (authorizationCode != null) queryParameters['name'] = name;
+      Response response = await _dio.post('/auth/social', queryParameters: queryParameters);
       myLogger.i('🚀 response.data in fetchSocialAuth: ${response.data}  statusCode: ${response.statusCode}');
       return response;
     } catch (error) {

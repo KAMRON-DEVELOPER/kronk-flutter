@@ -269,4 +269,14 @@ class Storage {
     final authProvider = await settingsBox.get('authProvider', defaultValue: 'email');
     return AuthProvider.values.byName(authProvider);
   }
+
+  Future<void> setTempAppleInfo({required String? email, required String name}) async {
+    await settingsBox.putAll({'email': email, 'name': name});
+  }
+
+  Future<Tuple2<String?, String?>> getTempAppleInfo() async {
+    return Tuple2(await settingsBox.get('email'), await settingsBox.get('name'));
+  }
+
+  Future<void> clearTempAppleInfo() async => await settingsBox.deleteAll(['email', 'name']);
 }
