@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -57,6 +58,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     final MyTheme theme = ref.watch(themeProvider);
     Sizes.init(context);
+
     return MaterialApp.router(
       title: 'Kronk',
       debugShowCheckedModeBanner: false,
@@ -65,6 +67,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       routeInformationProvider: widget.router.routeInformationProvider,
 
       theme: ThemeData(
+        useMaterial3: true,
         splashFactory: NoSplash.splashFactory,
         scaffoldBackgroundColor: theme.primaryBackground,
         unselectedWidgetColor: theme.secondaryText,
@@ -76,6 +79,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           titleSpacing: 0,
           scrolledUnderElevation: 0,
           elevation: 0,
+          systemOverlayStyle: const SystemUiOverlayStyle(systemNavigationBarColor: Colors.transparent, systemNavigationBarIconBrightness: Brightness.dark),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: theme.primaryBackground,
@@ -86,6 +90,12 @@ class _MyAppState extends ConsumerState<MyApp> {
         bottomSheetTheme: BottomSheetThemeData(dragHandleColor: theme.secondaryText),
         iconTheme: IconThemeData(color: theme.primaryText, size: 16.dp),
         scrollbarTheme: ScrollbarThemeData(radius: Radius.circular(2.dp), thickness: WidgetStatePropertyAll(4.dp), thumbColor: WidgetStatePropertyAll(theme.secondaryText)),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: theme.primaryBackground,
+          selectedItemColor: theme.primaryText,
+          unselectedItemColor: theme.secondaryText,
+          type: BottomNavigationBarType.fixed,
+        ),
       ),
     );
   }

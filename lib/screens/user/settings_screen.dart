@@ -50,25 +50,12 @@ class SettingsScreen extends ConsumerWidget {
           const SectionLabelWidget(title: 'appearance'),
           const AppearanceSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
-          const SectionLabelWidget(title: 'services', isServie: true),
+          const SectionLabelWidget(title: 'services', isService: true),
           const ServicesSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
           const SectionLabelWidget(title: 'statistics'),
           const StatisticsSectionWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 12.dp)),
-          SliverToBoxAdapter(
-            child: FutureBuilder(
-              future: ConfigService.fetchShowSupportButtons(),
-              builder: (context, asyncSnapshot) {
-                if (asyncSnapshot.connectionState != ConnectionState.done) return const SizedBox.shrink();
-
-                final showSupport = asyncSnapshot.data ?? false;
-                if (!showSupport) return const SizedBox.shrink();
-
-                return const SectionLabelWidget(title: 'support');
-              },
-            ),
-          ),
           const SupportSectionWidget(),
           const MaraudersMapFootprints(),
           const DisappointingSectionWidget(),
@@ -186,16 +173,16 @@ class SettingsScreen extends ConsumerWidget {
 
 class SectionLabelWidget extends ConsumerWidget {
   final String title;
-  final bool isServie;
+  final bool isService;
 
-  const SectionLabelWidget({super.key, required this.title, this.isServie = false});
+  const SectionLabelWidget({super.key, required this.title, this.isService = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
     return SliverToBoxAdapter(
       child: Container(
-        margin: EdgeInsets.only(left: 16.dp, bottom: isServie ? 0 : 4.dp),
+        margin: EdgeInsets.only(left: 16.dp, bottom: isService ? 0 : 4.dp),
         child: Text(
           title,
           style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 20.dp, fontWeight: FontWeight.w500),
@@ -292,10 +279,7 @@ class ServicesSectionWidget extends ConsumerWidget {
       padding: EdgeInsets.symmetric(horizontal: 16.dp),
       sliver: SliverReorderableList(
         itemCount: services.length,
-        onReorder: (int oldIndex, int newIndex) async {
-          if (newIndex > oldIndex) newIndex--;
-          await ref.read(navbarProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex);
-        },
+        onReorder: (int oldIndex, int newIndex) async => await ref.read(navbarProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex),
         itemBuilder: (context, index) {
           final service = services.elementAt(index);
 
@@ -464,6 +448,16 @@ class SupportSectionWidget extends ConsumerWidget {
             return Column(
               spacing: 8.dp,
               children: [
+                /// Section label
+                Container(
+                  margin: EdgeInsets.only(bottom: 4.dp),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'support',
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 20.dp, fontWeight: FontWeight.w500),
+                  ),
+                ),
+
                 /// buy me a coffee
                 ElevatedButton(
                   onPressed: () async {

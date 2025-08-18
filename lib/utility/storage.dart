@@ -49,7 +49,7 @@ class Storage {
 
   List<NavbarModel> getNavbarItems() => navbarBox.values.cast<NavbarModel>().toList();
 
-  Future<void> updateNavbarItemOrder({required int oldIndex, required int newIndex}) async {
+  Future<void> reorderNavbarItem({required int oldIndex, required int newIndex}) async {
     List<NavbarModel> navbarItems = getNavbarItems();
 
     final NavbarModel reorderedItem = navbarItems.removeAt(oldIndex);

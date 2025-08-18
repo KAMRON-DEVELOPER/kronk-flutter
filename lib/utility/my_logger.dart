@@ -1,5 +1,6 @@
-import 'package:kronk/utility/constants.dart';
 import 'package:logger/logger.dart';
+
+import 'constants.dart';
 
 // ANSI color codes
 const String reset = '\x1B[0m';

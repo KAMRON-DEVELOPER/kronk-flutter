@@ -10,29 +10,57 @@ class NavbarNotifier extends Notifier<List<NavbarModel>> {
     return ref.watch(storageProvider).getNavbarItems();
   }
 
-  Future<void> toggleNavbarItem({required int index}) async {
+  Future<void> toggleNavbarItem({required int index, bool appliedToEnabled = false}) async {
     final storage = ref.watch(storageProvider);
     List<NavbarModel> navbarItems = <NavbarModel>[...state];
-    NavbarModel navbarItem = navbarItems.elementAt(index);
+    List<NavbarModel> enabledItems = navbarItems.where((e) => e.isEnabled).toList();
+
+    final itemToToggle = appliedToEnabled ? enabledItems.elementAt(index) : navbarItems.elementAt(index);
+    final actualIndex = navbarItems.indexOf(itemToToggle);
+
+    NavbarModel navbarItem = navbarItems.elementAt(appliedToEnabled ? index : actualIndex);
 
     if (navbarItem.isEnabled) {
       navbarItem.isEnabled = false;
     } else {
       navbarItem.isEnabled = true;
     }
-    await navbarItem.save();
 
     state = storage.getNavbarItems();
+
+    await navbarItem.save();
   }
 
-  Future<void> reorderNavbarItem({required int oldIndex, required int newIndex}) async {
+  Future<void> reorderNavbarItem({required int oldIndex, required int newIndex, bool appliedToEnabled = false}) async {
     final storage = ref.watch(storageProvider);
-    List<NavbarModel> navbarItems = <NavbarModel>[...state];
-    final NavbarModel reorderedItem = navbarItems.removeAt(oldIndex);
-    navbarItems.insert(newIndex, reorderedItem);
-    state = navbarItems;
+    final navbarItems = [...state];
+    final enabledItems = navbarItems.where((e) => e.isEnabled).toList();
 
-    await storage.updateNavbarItemOrder(oldIndex: oldIndex, newIndex: newIndex);
+    final itemToMove = appliedToEnabled ? enabledItems.elementAt(oldIndex) : navbarItems.elementAt(oldIndex);
+    final actualOldIndex = navbarItems.indexOf(itemToMove);
+
+    if (appliedToEnabled) {
+      if (newIndex > oldIndex) newIndex -= 1;
+
+      final targetItem = enabledItems.elementAt(newIndex);
+      final actualNewIndex = navbarItems.indexOf(targetItem);
+
+      final item = navbarItems.removeAt(actualOldIndex);
+      navbarItems.insert(actualNewIndex, item);
+
+      state = navbarItems;
+
+      await storage.reorderNavbarItem(oldIndex: actualOldIndex, newIndex: actualNewIndex);
+    } else {
+      if (newIndex > oldIndex) newIndex -= 1;
+
+      final item = navbarItems.removeAt(oldIndex);
+      navbarItems.insert(newIndex, item);
+
+      state = navbarItems;
+
+      await storage.reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex);
+    }
   }
 
   void resetNavbar() {

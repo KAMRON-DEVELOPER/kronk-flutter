@@ -1,5 +1,5 @@
 class Constants {
-  final bool devMode = true;
+  final bool devMode = false;
   final String _apiDevEndpoint = 'http://192.168.31.55:8000/api/v1';
   final String _apiProdEndpoint = 'https://api.kronk.uz/api/v1';
 
