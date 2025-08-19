@@ -273,13 +273,13 @@ class ServicesSectionWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
-    final List<NavbarModel> services = ref.watch(navbarProvider);
+    final List<NavbarModel> services = ref.watch(navbarItemsProvider);
 
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: 16.dp),
       sliver: SliverReorderableList(
         itemCount: services.length,
-        onReorder: (int oldIndex, int newIndex) async => await ref.read(navbarProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex),
+        onReorder: (int oldIndex, int newIndex) async => await ref.read(navbarItemsProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex),
         itemBuilder: (context, index) {
           final service = services.elementAt(index);
 
@@ -518,15 +518,15 @@ class DisappointingSectionWidget extends ConsumerWidget {
             listener: (context, state) {
               if (state is SignOutSuccess) {
                 showToast(context, ref, ToastificationType.info, "You've been signed out");
-                ref.invalidate(navbarProvider);
+                ref.invalidate(navbarItemsProvider);
                 context.go('/welcome');
               } else if (state is GoogleSignOutSuccess) {
                 showToast(context, ref, ToastificationType.info, 'Signed out from your Google account');
-                ref.invalidate(navbarProvider);
+                ref.invalidate(navbarItemsProvider);
                 context.go('/welcome');
               } else if (state is AppleSignOutSuccess) {
                 showToast(context, ref, ToastificationType.info, 'Signed out from Apple. Your account has been revoked and unlinked');
-                ref.invalidate(navbarProvider);
+                ref.invalidate(navbarItemsProvider);
                 context.go('/welcome');
               }
             },
@@ -597,7 +597,7 @@ class BackButtonWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
-    final bool isAnyServiceEnabled = ref.watch(navbarProvider).any((service) => service.isEnabled);
+    final bool isAnyServiceEnabled = ref.watch(navbarItemsProvider).any((service) => service.isEnabled);
 
     return IconButton(
       onPressed: () {

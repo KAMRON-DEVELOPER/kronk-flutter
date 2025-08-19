@@ -3,7 +3,7 @@ import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/riverpod/general/storage_provider.dart';
 import 'package:kronk/utility/my_logger.dart';
 
-final navbarProvider = NotifierProvider<NavbarNotifier, List<NavbarModel>>(() => NavbarNotifier());
+final navbarItemsProvider = NotifierProvider<NavbarNotifier, List<NavbarModel>>(() => NavbarNotifier());
 
 class NavbarNotifier extends Notifier<List<NavbarModel>> {
   @override
@@ -41,26 +41,23 @@ class NavbarNotifier extends Notifier<List<NavbarModel>> {
   }
 
   Future<void> reorderNavbarItem({required int oldIndex, required int newIndex, bool appliedToEnabled = false}) async {
-    myLogger.e('reorderNavbarItem oldIndex: $oldIndex, newIndex: $newIndex');
-
+    myLogger.e('reorderNavbarItem oldIndex: $oldIndex, newIndex: $newIndex triggered from ${appliedToEnabled ? 'navbar' : 'settings'}');
     final storage = ref.watch(storageProvider);
     final navbarItems = [...state];
-    final enabledItems = navbarItems.where((e) => e.isEnabled).toList();
-
-    final itemToMove = appliedToEnabled ? enabledItems.elementAt(oldIndex) : navbarItems.elementAt(oldIndex);
-    final actualOldIndex = navbarItems.indexOf(itemToMove);
 
     if (appliedToEnabled) {
-      if (newIndex > oldIndex) newIndex -= 1;
+      final enabledItems = navbarItems.where((e) => e.isEnabled).toList();
 
-      final targetItem = enabledItems.elementAt(newIndex);
+      final itemToMove = enabledItems[oldIndex];
+      final targetItem = enabledItems[newIndex];
+
+      final actualOldIndex = navbarItems.indexOf(itemToMove);
       final actualNewIndex = navbarItems.indexOf(targetItem);
 
       final item = navbarItems.removeAt(actualOldIndex);
       navbarItems.insert(actualNewIndex, item);
 
       state = navbarItems;
-
       await storage.reorderNavbarItem(oldIndex: actualOldIndex, newIndex: actualNewIndex);
     } else {
       if (newIndex > oldIndex) newIndex -= 1;
@@ -69,7 +66,6 @@ class NavbarNotifier extends Notifier<List<NavbarModel>> {
       navbarItems.insert(newIndex, item);
 
       state = navbarItems;
-
       await storage.reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex);
     }
   }

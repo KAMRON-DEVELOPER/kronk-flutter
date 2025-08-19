@@ -44,7 +44,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 
   void _listenRouterChanges({required String fullPath}) {
-    final navbarItems = ref.read(navbarProvider);
+    final navbarItems = ref.read(navbarItemsProvider);
     final enabledRoutes = navbarItems.where((e) => e.isEnabled).toList();
     final enabledRoutesString = enabledRoutes.map((e) => e.route).toList();
 
