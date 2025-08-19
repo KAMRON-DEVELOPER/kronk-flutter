@@ -50,7 +50,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     final index = enabledRoutesString.indexWhere((route) => fullPath.startsWith(route));
     if (index != -1) {
-      ref.read(selectedIndexProvider.notifier).state = index;
+      ref.read(activeIndexProvider.notifier).state = index;
     }
   }
 
@@ -79,7 +79,7 @@ class _MyAppState extends ConsumerState<MyApp> {
           titleSpacing: 0,
           scrolledUnderElevation: 0,
           elevation: 0,
-          systemOverlayStyle: const SystemUiOverlayStyle(systemNavigationBarColor: Colors.transparent, systemNavigationBarIconBrightness: Brightness.dark),
+          systemOverlayStyle: SystemUiOverlayStyle(systemNavigationBarColor: theme.primaryBackground, systemNavigationBarIconBrightness: Brightness.dark),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: theme.primaryBackground,

@@ -514,123 +514,122 @@ class FeedVideoWidget extends ConsumerWidget {
     final bool isEditable = feed.feedMode == FeedMode.create || feed.feedMode == FeedMode.update;
     double blurSigma = isRefreshing ? 3 : 0;
 
+    final videoAspectRatio = feed.videoAspectRatio!;
+    final isTall = videoAspectRatio < 0.8;
+    final aspectRatio = isTall ? 0.8 : videoAspectRatio;
+
     return videoController.when(
-      data: (VideoPlayerController controller) {
-        final videoAspectRatio = controller.value.aspectRatio;
-        final isTall = videoAspectRatio < 0.8;
-        final aspectRatio = isTall ? 0.8 : videoAspectRatio;
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            /// Actual Video
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10.dp),
-              child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-                child: AspectRatio(
-                  aspectRatio: aspectRatio,
-                  child: isTall
-                      ? FittedBox(
-                          fit: BoxFit.fitWidth,
-                          alignment: Alignment.center,
-                          child: SizedBox(width: controller.value.size.width, height: controller.value.size.height, child: VideoPlayer(controller)),
-                        )
-                      : VideoPlayer(controller),
+      data: (VideoPlayerController controller) => Stack(
+        alignment: Alignment.center,
+        children: [
+          /// Actual Video
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10.dp),
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+              child: AspectRatio(
+                aspectRatio: aspectRatio,
+                child: isTall
+                    ? FittedBox(
+                        fit: BoxFit.fitWidth,
+                        alignment: Alignment.center,
+                        child: SizedBox(width: controller.value.size.width, height: controller.value.size.height, child: VideoPlayer(controller)),
+                      )
+                    : VideoPlayer(controller),
+              ),
+            ),
+          ),
+
+          /// Animated icons layer
+          VideoOverlayWidget(feedId: feed.id),
+
+          /// Gesture handling layer
+          Positioned.fill(
+            child: Row(
+              children: [
+                /// Left double tap
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async => await videoControllerNotifier.togglePlayPause(),
+                    onLongPressStart: (details) async => await videoControllerNotifier.startFastForward(),
+                    onLongPressEnd: (details) async => await videoControllerNotifier.stopFastForward(),
+                    onDoubleTap: () async => await videoControllerNotifier.seekTo(duration: const Duration(seconds: 5), backward: true),
+                  ),
                 ),
-              ),
-            ),
 
-            /// Animated icons layer
-            VideoOverlayWidget(feedId: feed.id),
-
-            /// Gesture handling layer
-            Positioned.fill(
-              child: Row(
-                children: [
-                  /// Left double tap
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async => await videoControllerNotifier.togglePlayPause(),
-                      onLongPressStart: (details) async => await videoControllerNotifier.startFastForward(),
-                      onLongPressEnd: (details) async => await videoControllerNotifier.stopFastForward(),
-                      onDoubleTap: () async => await videoControllerNotifier.seekTo(duration: const Duration(seconds: 5), backward: true),
-                    ),
+                /// Right double tap
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async => await videoControllerNotifier.togglePlayPause(),
+                    onLongPressStart: (details) async => await videoControllerNotifier.startFastForward(),
+                    onLongPressEnd: (details) async => await videoControllerNotifier.stopFastForward(),
+                    onDoubleTap: () async => await videoControllerNotifier.seekTo(duration: const Duration(seconds: 5)),
                   ),
-
-                  /// Right double tap
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async => await videoControllerNotifier.togglePlayPause(),
-                      onLongPressStart: (details) async => await videoControllerNotifier.startFastForward(),
-                      onLongPressEnd: (details) async => await videoControllerNotifier.stopFastForward(),
-                      onDoubleTap: () async => await videoControllerNotifier.seekTo(duration: const Duration(seconds: 5)),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
 
-            /// Mute Button and video duration
+          /// Mute Button and video duration
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: ValueListenableBuilder(
+              valueListenable: controller,
+              builder: (context, VideoPlayerValue value, child) {
+                String formatDuration(Duration d) {
+                  final minutes = d.inMinutes.toString().padLeft(2, '0');
+                  final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+                  return '$minutes:$seconds';
+                }
+
+                final positionText = formatDuration(value.position);
+                final totalText = formatDuration(controller.value.duration);
+                final durationText = '$positionText/$totalText';
+
+                return Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.dp, vertical: 2.dp),
+                  decoration: BoxDecoration(color: theme.primaryBackground.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    spacing: 8.dp,
+                    children: [
+                      Text(
+                        durationText,
+                        style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 12.dp),
+                      ),
+                      GestureDetector(
+                        child: Icon(controller.value.volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: theme.secondaryText),
+                        onTap: () async => await videoControllerNotifier.toggleMute(),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          /// Delete button
+          if (isEditable)
             Positioned(
-              bottom: 8,
-              right: 8,
-              child: ValueListenableBuilder(
-                valueListenable: controller,
-                builder: (context, VideoPlayerValue value, child) {
-                  String formatDuration(Duration d) {
-                    final minutes = d.inMinutes.toString().padLeft(2, '0');
-                    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
-                    return '$minutes:$seconds';
+              top: 8.dp,
+              right: 8.dp,
+              child: GestureDetector(
+                onTap: () {
+                  if (feed.videoFile != null) {
+                    notifier.updateField(feed: feed.copyWith(videoFile: null, videoUrl: null));
+                  } else {
+                    notifier.updateField(feed: feed.copyWith(removeVideo: true));
                   }
-
-                  final positionText = formatDuration(value.position);
-                  final totalText = formatDuration(controller.value.duration);
-                  final durationText = '$positionText/$totalText';
-
-                  return Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.dp, vertical: 2.dp),
-                    decoration: BoxDecoration(color: theme.primaryBackground.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      spacing: 8.dp,
-                      children: [
-                        Text(
-                          durationText,
-                          style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 12.dp),
-                        ),
-                        GestureDetector(
-                          child: Icon(controller.value.volume == 0 ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: theme.secondaryText),
-                          onTap: () async => await videoControllerNotifier.toggleMute(),
-                        ),
-                      ],
-                    ),
-                  );
                 },
-              ),
-            ),
-
-            /// Delete button
-            if (isEditable)
-              Positioned(
-                top: 8.dp,
-                right: 8.dp,
-                child: GestureDetector(
-                  onTap: () {
-                    if (feed.videoFile != null) {
-                      notifier.updateField(feed: feed.copyWith(videoFile: null, videoUrl: null));
-                    } else {
-                      notifier.updateField(feed: feed.copyWith(removeVideo: true));
-                    }
-                  },
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(color: theme.primaryBackground.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12.dp)),
-                    child: Icon(Icons.close_rounded, color: theme.secondaryText, size: 24.dp),
-                  ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: theme.primaryBackground.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12.dp)),
+                  child: Icon(Icons.close_rounded, color: theme.secondaryText, size: 24.dp),
                 ),
               ),
-          ],
-        );
-      },
-      loading: () => AspectRatio(aspectRatio: feed.videoAspectRatio ?? 4 / 3, child: const FeedVideoShimmerWidget()),
+            ),
+        ],
+      ),
+      loading: () => AspectRatio(aspectRatio: aspectRatio, child: const FeedVideoShimmerWidget()),
       error: (error, _) {
         myLogger.e('error: $error');
         return const FeedVideoErrorWidget();
@@ -656,6 +655,9 @@ class FeedImageWidget extends ConsumerWidget {
     final double imageWidth = Sizes.screenWidth - 40.dp;
 
     final imageUrl = '${constants.bucketEndpoint}/${feed.imageUrl}';
+    final imageAspectRatio = feed.imageAspectRatio!;
+    final isTall = imageAspectRatio < 0.8;
+    final aspectRatio = isTall ? 0.8 : imageAspectRatio;
     return Stack(
       children: [
         /// Actual image
@@ -663,35 +665,32 @@ class FeedImageWidget extends ConsumerWidget {
           borderRadius: BorderRadius.circular(10.dp),
           child: ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-            child: AspectRatio(
-              aspectRatio: feed.imageAspectRatio ?? 4 / 3,
-              child: InteractiveViewer(
-                scaleEnabled: true,
-                panEnabled: true,
-                child: feed.removeImage || feed.imageFile != null
-                    ? Image.file(feed.imageFile!, width: imageWidth, cacheWidth: imageWidth.cacheSize(context))
-                    : CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        width: imageWidth,
-                        memCacheWidth: imageWidth.cacheSize(context),
-                        fit: BoxFit.fitWidth,
-                        placeholder: (context, url) => Container(
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(8.dp),
-                            border: Border.all(color: theme.outline),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(8.dp),
-                            border: Border.all(color: theme.outline),
-                          ),
+            child: feed.removeImage || feed.imageFile != null
+                ? Image.file(feed.imageFile!, width: imageWidth, cacheWidth: imageWidth.cacheSize(context))
+                : SizedBox(
+                    width: imageWidth,
+                    height: imageWidth / aspectRatio,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      memCacheHeight: (imageWidth / aspectRatio).cacheSize(context),
+                      fit: BoxFit.fitWidth,
+                      alignment: Alignment.topCenter,
+                      placeholder: (context, url) => DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(8.dp),
+                          border: Border.all(color: theme.outline),
                         ),
                       ),
-              ),
-            ),
+                      errorWidget: (context, url, error) => DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(8.dp),
+                          border: Border.all(color: theme.outline),
+                        ),
+                      ),
+                    ),
+                  ),
           ),
         ),
 
