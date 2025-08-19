@@ -15,7 +15,7 @@ import 'package:tuple/tuple.dart';
 
 class Storage {
   final Box<NavbarModel?> navbarBox;
-  final Box<UserModel?> userBox;
+  final Box<UserModel> userBox;
   final Box settingsBox;
 
   Storage() : navbarBox = Hive.box<NavbarModel>('navbarBox'), userBox = Hive.box<UserModel>('userBox'), settingsBox = Hive.box('settingsBox');
@@ -84,12 +84,9 @@ class Storage {
     return getRoute();
   }
 
-  UserModel? getUser() => userBox.get('user');
+  UserModel getUser() => userBox.get('user') as UserModel;
 
-  Future<void> setUserAsync({required UserModel user}) async {
-    myLogger.t('user is storing to storage, user.name: ${user.name}');
-    await userBox.put('user', user);
-  }
+  Future<void> setUserAsync({required UserModel user}) async => await userBox.put('user', user);
 
   Future<String?> getAccessTokenAsync() async {
     String? accessToken = await settingsBox.get('access_token');

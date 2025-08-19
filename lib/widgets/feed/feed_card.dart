@@ -15,7 +15,6 @@ import 'package:kronk/constants/enums.dart';
 import 'package:kronk/constants/kronk_icon.dart';
 import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/models/feed_model.dart';
-import 'package:kronk/models/user_model.dart';
 import 'package:kronk/riverpod/feed/feed_card_state_provider.dart';
 import 'package:kronk/riverpod/feed/timeline_provider.dart';
 import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
@@ -120,8 +119,8 @@ class FeedHeaderSection extends ConsumerWidget {
               GestureDetector(
                 onTap: () {
                   final Storage storage = Storage();
-                  final UserModel? user = storage.getUser();
-                  if (user?.id == feed.author.id) {
+                  final user = storage.getUser();
+                  if (user.id == feed.author.id) {
                     context.go('/profile');
                   } else {
                     context.pushNamed('previewProfile', extra: feed.author.id);
@@ -256,11 +255,11 @@ class FeedCardThreeDotsButton extends ConsumerWidget {
       child: Icon(Icons.more_vert_rounded, color: feed.feedMode == FeedMode.view ? theme.primaryText : theme.secondaryText, size: 24.dp),
       onTap: () {
         if (feed.feedMode != FeedMode.view) return;
-        final Storage storage = Storage();
-        final UserModel? user = storage.getUser();
+        final storage = Storage();
+        final user = storage.getUser();
         if (feed.feedMode == FeedMode.create) return;
 
-        if (feed.author.id == user?.id) {
+        if (feed.author.id == user.id) {
           showModalBottomSheet(
             context: context,
             backgroundColor: theme.secondaryBackground,

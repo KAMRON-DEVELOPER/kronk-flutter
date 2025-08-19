@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kronk/riverpod/general/navbar_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
-import 'package:kronk/utility/my_logger.dart';
 
 /// Navigation state
 final activeIndexProvider = StateProvider<int>((ref) => 0);
 
-/// Scroll controller (auto-disposed)
-final scrollControllerProvider = Provider.autoDispose<ScrollController>((ref) {
-  final controller = ScrollController();
-  ref.onDispose(controller.dispose);
-  return controller;
-});
+/// Keep navbar scroll offset because when screen chang navbar recreated
+final navbarScrollOffsetProvider = StateProvider<double>((ref) => 0.0);
 
 /// NavbarLayout
 class NavbarLayout {
@@ -50,10 +44,23 @@ class DragState {
 }
 
 class DragStateNotifier extends Notifier<DragState> {
+  // @override
+  // DragState build() {
+  //   final enabledItems = ref.watch(navbarItemsProvider).where((item) => item.isEnabled).toList();
+  //   return DragState(navbarLayout: NavbarLayout.fromItemsCount(enabledItems.length));
+  // }
+
   @override
   DragState build() {
-    final enabledItems = ref.watch(navbarItemsProvider).where((item) => item.isEnabled).toList();
-    return DragState(navbarLayout: NavbarLayout.fromItemsCount(enabledItems.length));
+    final items = ref.read(navbarItemsProvider).where((item) => item.isEnabled).toList();
+    final initial = DragState(navbarLayout: NavbarLayout.fromItemsCount(items.length));
+
+    ref.listen(navbarItemsProvider, (previous, next) {
+      final enabledItems = next.where((item) => item.isEnabled).toList();
+      state = state.copyWith(navbarLayout: NavbarLayout.fromItemsCount(enabledItems.length));
+    });
+
+    return initial;
   }
 
   void updateNavbarLayout(int itemCount) {
@@ -69,16 +76,34 @@ class DragStateNotifier extends Notifier<DragState> {
 
 final dragStateProvider = NotifierProvider<DragStateNotifier, DragState>(DragStateNotifier.new);
 
-/// Drag state
-class Navbar extends ConsumerWidget {
+/// Navbar
+class Navbar extends ConsumerStatefulWidget {
   const Navbar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = ref.watch(themeProvider);
-    final scrollController = ref.watch(scrollControllerProvider);
+  ConsumerState<Navbar> createState() => _NavbarState();
+}
 
+class _NavbarState extends ConsumerState<Navbar> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ref.watch(themeProvider);
     final navbarLayout = ref.watch(dragStateProvider).navbarLayout;
+    final bool isAnyServiceEnabled = ref.watch(navbarItemsProvider.select((items) => items.any((item) => item.isEnabled)));
 
     return Container(
       height: navbarLayout.barHeight,
@@ -88,16 +113,42 @@ class Navbar extends ConsumerWidget {
       ),
       child: Stack(
         children: [
-          SingleChildScrollView(
-            controller: scrollController,
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: navbarLayout.contentWidth,
-              height: navbarLayout.barHeight,
-              child: const Stack(children: [DragTargetsLayer(), AnimatedIconsLayer()]),
-            ),
+          Listener(
+            onPointerMove: (event) {
+              if (ref.read(dragStateProvider).dragIndex == null) return;
+
+              final scrollPosition = _scrollController.position;
+              final scrollThreshold = navbarLayout.cellWidth;
+
+              // Check if pointer is near the left edge and scroll left
+              if (event.localPosition.dx < scrollThreshold && scrollPosition.pixels > 0) {
+                _scrollController.animateTo(
+                  (scrollPosition.pixels - 20).clamp(0.0, scrollPosition.maxScrollExtent),
+                  duration: const Duration(milliseconds: 100),
+                  curve: Curves.linear,
+                );
+              }
+              // Check if pointer is near the right edge and scroll right
+              else if (event.localPosition.dx > Sizes.screenWidth - scrollThreshold && scrollPosition.pixels < scrollPosition.maxScrollExtent) {
+                _scrollController.animateTo(
+                  (scrollPosition.pixels + 20).clamp(0.0, scrollPosition.maxScrollExtent),
+                  duration: const Duration(milliseconds: 100),
+                  curve: Curves.linear,
+                );
+              }
+            },
+            child: isAnyServiceEnabled
+                ? SingleChildScrollView(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: navbarLayout.contentWidth,
+                      height: navbarLayout.barHeight,
+                      child: const Stack(children: [DragTargetsLayer(), AnimatedIconsLayer()]),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
-          const DeleteOverlay(),
         ],
       ),
     );
@@ -117,12 +168,8 @@ class DragTargetsLayer extends ConsumerWidget {
     return Row(
       children: List.generate(enabledItems.length, (index) {
         return DragTarget<int>(
-          onMove: (details) {
-            ref.read(dragStateProvider.notifier).setHoverIndex(index);
-          },
-          onWillAcceptWithDetails: (details) {
-            return details.data != index;
-          },
+          onMove: (details) => ref.read(dragStateProvider.notifier).setHoverIndex(index),
+          onWillAcceptWithDetails: (details) => details.data != index,
           onAcceptWithDetails: (details) async {
             final activeIndex = ref.read(activeIndexProvider);
             final enabledItems = ref.read(navbarItemsProvider).where((item) => item.isEnabled).toList();
@@ -143,27 +190,8 @@ class DragTargetsLayer extends ConsumerWidget {
 }
 
 /// Animated icons layer
-class AnimatedIconsLayer extends ConsumerStatefulWidget {
+class AnimatedIconsLayer extends ConsumerWidget {
   const AnimatedIconsLayer({super.key});
-
-  @override
-  ConsumerState<AnimatedIconsLayer> createState() => _AnimatedIconsLayerState();
-}
-
-class _AnimatedIconsLayerState extends ConsumerState<AnimatedIconsLayer> with SingleTickerProviderStateMixin {
-  AnimationController? _shakeController;
-
-  @override
-  void initState() {
-    super.initState();
-    _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
-  }
-
-  @override
-  void dispose() {
-    _shakeController?.dispose();
-    super.dispose();
-  }
 
   double getLeftOffset({required int index, required int? dragIndex, required int? hoverIndex, required double cellWidth}) {
     if (dragIndex == null) return index * cellWidth;
@@ -174,7 +202,7 @@ class _AnimatedIconsLayerState extends ConsumerState<AnimatedIconsLayer> with Si
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
     final enabledItems = ref.watch(navbarItemsProvider).where((item) => item.isEnabled).toList();
     final notifier = ref.read(navbarItemsProvider.notifier);
@@ -203,17 +231,35 @@ class _AnimatedIconsLayerState extends ConsumerState<AnimatedIconsLayer> with Si
             dragAnchorStrategy: childDragAnchorStrategy,
             onDragStarted: () {
               ref.read(dragStateProvider.notifier).setDragIndex(index);
-              _shakeController?.reset();
             },
+            // Inside AnimatedIconsLayer -> LongPressDraggable
             onDragEnd: (details) async {
+              final activeIndex = ref.read(activeIndexProvider);
+              final enabledItemsBefore = ref.read(navbarItemsProvider).where((item) => item.isEnabled).toList();
+              final activeItem = enabledItemsBefore.elementAt(activeIndex);
+
               final feedbackSize = Size(navbarLayout.cellWidth * 1.2, navbarLayout.barHeight * 1.2);
               final finger = details.offset;
               final feedbackRect = Rect.fromCenter(center: finger, width: feedbackSize.width, height: feedbackSize.height);
-
               final isOverlapping = barRect.overlaps(feedbackRect);
+              final dragIndex = dragState.dragIndex;
 
-              if (!details.wasAccepted && dragState.dragIndex != null && !isOverlapping) {
-                await notifier.toggleNavbarItem(index: dragState.dragIndex!, appliedToEnabled: true);
+              if (dragIndex != null && !details.wasAccepted && !isOverlapping) {
+                await notifier.toggleNavbarItem(index: dragIndex, appliedToEnabled: true);
+
+                final enabledItemsAfter = ref.read(navbarItemsProvider).where((item) => item.isEnabled).toList();
+                final newActiveIndex = enabledItemsAfter.indexOf(activeItem);
+
+                if (newActiveIndex != -1) {
+                  ref.read(activeIndexProvider.notifier).state = newActiveIndex;
+                } else if (enabledItemsAfter.isNotEmpty) {
+                  ref.read(activeIndexProvider.notifier).state = 0;
+                  if (!context.mounted) return;
+                  context.go(enabledItemsAfter.first.route);
+                } else if (enabledItemsAfter.isEmpty) {
+                  if (!context.mounted) return;
+                  context.go('/welcome');
+                }
               }
 
               ref.read(dragStateProvider.notifier).endDrag();
@@ -238,10 +284,7 @@ class _AnimatedIconsLayerState extends ConsumerState<AnimatedIconsLayer> with Si
               width: navbarLayout.cellWidth,
               height: navbarLayout.barHeight,
               child: GestureDetector(
-                onTap: () {
-                  myLogger.e('index: $index');
-                  if (activeIndex != index) context.go(item.route);
-                },
+                onTap: () => activeIndex != index ? context.go(item.route) : null,
                 child: Icon(
                   item.getIconData(isActive: isActive),
                   color: isActive ? theme.primaryText : theme.secondaryText,
@@ -252,36 +295,6 @@ class _AnimatedIconsLayerState extends ConsumerState<AnimatedIconsLayer> with Si
           ),
         );
       }),
-    );
-  }
-}
-
-/// Delete overlay when navbar item dropped
-class DeleteOverlay extends ConsumerWidget {
-  const DeleteOverlay({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDragging = ref.watch(dragStateProvider.select((state) => state.dragIndex != null));
-
-    return Visibility(
-      visible: isDragging,
-      child: Positioned.fill(
-        bottom: kBottomNavigationBarHeight,
-        child: Container(
-          color: Colors.black.withValues(alpha: 0.7),
-          child: Material(
-            color: Colors.transparent,
-            child: Center(
-              child: Text(
-                'Drop it outside the navbar to delete it. 😎',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.quicksand(color: ref.watch(themeProvider).primaryText, fontSize: 24.dp, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -46,8 +46,7 @@ class ProfileNotifier extends AutoDisposeFamilyAsyncNotifier<UserModel, String?>
       bool isOnline = initialResults.any((ConnectivityResult result) => result != ConnectivityResult.none);
 
       if (!isOnline) {
-        final UserModel? user = _storage.getUser();
-        if (user == null) throw Exception('You are not authenticated');
+        final UserModel user = _storage.getUser();
         return user;
       }
       final UserModel user = await _userService.fetchGetProfile(targetUserId: targetUserId);

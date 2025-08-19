@@ -415,10 +415,10 @@ class ProfileSearchCard extends ConsumerWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        final Storage storage = Storage();
-        final UserModel? cacheUser = storage.getUser();
-        if (cacheUser?.id == user.id) {
-          myLogger.d('it is me..., user.name: ${user.name} vs cacheUser.name: ${cacheUser?.name}');
+        final storage = Storage();
+        final cacheUser = storage.getUser();
+        if (cacheUser.id == user.id) {
+          myLogger.d('it is me..., user.name: ${user.name} vs cacheUser.name: ${cacheUser.name}');
           context.go('/profile');
         } else {
           myLogger.d('it is Adhambek...');

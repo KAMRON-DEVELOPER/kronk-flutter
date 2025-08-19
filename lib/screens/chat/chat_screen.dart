@@ -62,10 +62,7 @@ class ChatScreen extends ConsumerWidget {
           ),
 
         /// cover with color the appbar background color in IOS
-        Container(
-          height: MediaQuery.of(context).padding.top,
-          color: theme.primaryBackground,
-        ),
+        Container(height: MediaQuery.of(context).padding.top, color: theme.primaryBackground),
 
         /// Scaffold
         AnnotatedRegion<SystemUiOverlayStyle>(
@@ -200,7 +197,7 @@ class ChatMessageBubble extends ConsumerWidget {
     final theme = ref.watch(themeProvider);
     final storage = ref.watch(storageProvider);
     final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
-    final isSentByUser = message.senderId == storage.getUser()?.id;
+    final isSentByUser = message.senderId == storage.getUser().id;
 
     return Row(
       mainAxisAlignment: isSentByUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -278,7 +275,7 @@ class ChatInputWidget extends ConsumerWidget {
         } else {
           ref
               .read(chatsWebsocketProvider.notifier)
-              .sendMessage(chatId: sharedChat.id!, userId: storage.getUser()?.id ?? '', participantId: sharedChat.participant.id, message: messageController.text.trim());
+              .sendMessage(chatId: sharedChat.id!, userId: storage.getUser().id, participantId: sharedChat.participant.id, message: messageController.text.trim());
         }
         messageController.clear();
       } catch (error) {

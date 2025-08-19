@@ -25,7 +25,6 @@ class ChatMessagesNotifier extends AutoDisposeFamilyAsyncNotifier<ChatMessagesSt
   late ChatService _chatService;
   late Connectivity _connectivity;
   late Storage _storage;
-  int _offset = 0;
   final int _limit = 20;
   bool _isLoadingMore = false;
 
@@ -42,7 +41,6 @@ class ChatMessagesNotifier extends AutoDisposeFamilyAsyncNotifier<ChatMessagesSt
       if (!isOnlineAndAuthenticated) return const ChatMessagesState(hasMore: false);
 
       final response = await _chatService.getMessages(chatId: chatId, offset: 0, limit: _limit);
-      _offset = response.item1.length;
 
       return ChatMessagesState(chatMessages: response.item1, total: response.item2, hasMore: response.item1.length < response.item2);
     } catch (error) {

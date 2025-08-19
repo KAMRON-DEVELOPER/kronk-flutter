@@ -7,7 +7,6 @@ import 'package:kronk/bloc/authentication/authentication_bloc.dart';
 import 'package:kronk/bloc/authentication/authentication_event.dart';
 import 'package:kronk/bloc/authentication/authentication_state.dart';
 import 'package:kronk/constants/my_theme.dart';
-import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/models/statistics_model.dart';
 import 'package:kronk/riverpod/general/navbar_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
@@ -180,12 +179,30 @@ class SectionLabelWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
+    final bool isAnyServiceEnabled = ref.watch(navbarItemsProvider.select((items) => items.any((item) => item.isEnabled)));
+
     return SliverToBoxAdapter(
       child: Container(
-        margin: EdgeInsets.only(left: 16.dp, bottom: isService ? 0 : 4.dp),
-        child: Text(
-          title,
-          style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 20.dp, fontWeight: FontWeight.w500),
+        margin: EdgeInsets.only(left: 16.dp, right: 16.dp, bottom: isService ? 0 : 4.dp),
+        child: Column(
+          spacing: 4.dp,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 20.dp, fontWeight: FontWeight.w500),
+            ),
+
+            if (isService)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.dp, vertical: 4.dp),
+                decoration: BoxDecoration(color: isAnyServiceEnabled ? theme.secondaryText : Colors.red.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(12.dp)),
+                child: Text(
+                  'Please enable at least one service to continue. Your enabled services will appear in your main navigation.',
+                  style: GoogleFonts.quicksand(color: isAnyServiceEnabled ? theme.primaryText : Colors.redAccent, fontSize: 12.dp, fontWeight: FontWeight.w500, height: 0),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -272,11 +289,11 @@ class ServicesSectionWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final MyTheme theme = ref.watch(themeProvider);
-    final List<NavbarModel> services = ref.watch(navbarItemsProvider);
+    final theme = ref.watch(themeProvider);
+    final services = ref.watch(navbarItemsProvider);
 
     return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: 16.dp),
+      padding: EdgeInsets.only(left: 16.dp, top: 4.dp, right: 16.dp),
       sliver: SliverReorderableList(
         itemCount: services.length,
         onReorder: (int oldIndex, int newIndex) async => await ref.read(navbarItemsProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex),
@@ -287,7 +304,7 @@ class ServicesSectionWidget extends ConsumerWidget {
             key: ValueKey(service.route),
             index: index,
             child: Container(
-              padding: EdgeInsets.symmetric(vertical: 8.dp, horizontal: 12.dp),
+              padding: EdgeInsets.symmetric(vertical: 8.dp, horizontal: 10.dp),
               margin: EdgeInsets.symmetric(vertical: 4.dp),
               decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(12.dp)),
               child: Row(

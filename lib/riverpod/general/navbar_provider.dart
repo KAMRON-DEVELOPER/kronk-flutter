@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/riverpod/general/storage_provider.dart';
-import 'package:kronk/utility/my_logger.dart';
 
 final navbarItemsProvider = NotifierProvider<NavbarNotifier, List<NavbarModel>>(() => NavbarNotifier());
 
@@ -12,22 +11,14 @@ class NavbarNotifier extends Notifier<List<NavbarModel>> {
   }
 
   Future<void> toggleNavbarItem({required int index, bool appliedToEnabled = false}) async {
-    myLogger.e('toggleNavbarItem index: $index');
     final storage = ref.watch(storageProvider);
     List<NavbarModel> navbarItems = <NavbarModel>[...state];
     List<NavbarModel> enabledItems = navbarItems.where((e) => e.isEnabled).toList();
 
-    final navbarItemsRoutes = navbarItems.map((e) => e.route);
-    final enabledItemsRoutes = enabledItems.map((e) => e.route);
-    myLogger.e('navbarItemsRoutes: $navbarItemsRoutes');
-    myLogger.e('enabledItemsRoutes: $enabledItemsRoutes');
-
     final itemToToggle = appliedToEnabled ? enabledItems.elementAt(index) : navbarItems.elementAt(index);
     final actualIndex = navbarItems.indexOf(itemToToggle);
-    myLogger.e('actualIndex: $actualIndex in ${appliedToEnabled ? 'enabledItems' : 'navbarItems'}');
 
     NavbarModel navbarItem = navbarItems.elementAt(actualIndex);
-    myLogger.e('navbarItem.route: ${navbarItem.route}');
 
     if (navbarItem.isEnabled) {
       navbarItem.isEnabled = false;
@@ -41,7 +32,6 @@ class NavbarNotifier extends Notifier<List<NavbarModel>> {
   }
 
   Future<void> reorderNavbarItem({required int oldIndex, required int newIndex, bool appliedToEnabled = false}) async {
-    myLogger.e('reorderNavbarItem oldIndex: $oldIndex, newIndex: $newIndex triggered from ${appliedToEnabled ? 'navbar' : 'settings'}');
     final storage = ref.watch(storageProvider);
     final navbarItems = [...state];
 

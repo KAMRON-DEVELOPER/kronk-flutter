@@ -71,11 +71,7 @@ class TimelineNotifier extends FamilyAsyncNotifier<List<FeedModel>, TimelineType
   }
 
   void createFeed() {
-    final UserModel? author = _storage.getUser();
-    if (author == null) {
-      state = AsyncValue.error('User not authenticated', StackTrace.current);
-      return;
-    }
+    final author = _storage.getUser();
 
     final placeholder = FeedModel(
       id: const Uuid().v4(),
@@ -189,11 +185,7 @@ class CommentNotifier extends FamilyAsyncNotifier<List<FeedModel>, String?> {
   }
 
   void createComment() {
-    final UserModel? author = _storage.getUser();
-    if (author == null) {
-      state = AsyncValue.error('User not authenticated', StackTrace.current);
-      return;
-    }
+    final UserModel author = _storage.getUser();
 
     final placeholder = FeedModel(
       id: const Uuid().v4(),
