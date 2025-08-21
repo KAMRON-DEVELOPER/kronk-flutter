@@ -31,6 +31,8 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
+  final PageStorageBucket _bucket = PageStorageBucket();
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +52,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     final index = enabledRoutesString.indexWhere((route) => fullPath.startsWith(route));
     if (index != -1) {
-      ref.read(activeIndexProvider.notifier).state = index;
+      ref.read(activeNavbarIndexProvider.notifier).state = index;
     }
   }
 
@@ -65,6 +67,8 @@ class _MyAppState extends ConsumerState<MyApp> {
       routerDelegate: widget.router.routerDelegate,
       routeInformationParser: widget.router.routeInformationParser,
       routeInformationProvider: widget.router.routeInformationProvider,
+
+      builder: (context, child) => PageStorage(bucket: _bucket, child: child!),
 
       theme: ThemeData(
         useMaterial3: true,

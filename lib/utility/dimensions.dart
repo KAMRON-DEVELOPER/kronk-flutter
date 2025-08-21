@@ -12,6 +12,7 @@ class Sizes {
   static late double devicePixelRatio;
   static late double viewPaddingTop;
   static late double viewPaddingBottom;
+  static late double navbarHeight;
   static late double s2;
   static late double s4;
   static late double s6;
@@ -34,6 +35,7 @@ class Sizes {
     devicePixelRatio = mediaQuery.devicePixelRatio;
     viewPaddingTop = mediaQuery.viewPadding.top;
     viewPaddingBottom = mediaQuery.viewPadding.bottom;
+    navbarHeight = scale(56);
 
     s2 = scale(2);
     s4 = scale(4);

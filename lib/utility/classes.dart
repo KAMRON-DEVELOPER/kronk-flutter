@@ -4,6 +4,29 @@ import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/models/feed_model.dart';
+import 'package:kronk/models/navbar_model.dart';
+import 'package:kronk/utility/dimensions.dart';
+
+/// Drag NavbarState
+class NavbarState {
+  final List<NavbarModel> items;
+  final int? dragIndex;
+  final int? hoverIndex;
+  final double cellWidth;
+  final double navbarHeight;
+
+  NavbarState({required this.items, this.dragIndex, this.hoverIndex}) : cellWidth = _calculateCellWidth(items), navbarHeight = Sizes.navbarHeight + Sizes.viewPaddingBottom;
+
+  NavbarState copyWith({List<NavbarModel>? items, int? dragIndex, int? hoverIndex}) {
+    return NavbarState(items: items ?? this.items, dragIndex: dragIndex ?? this.dragIndex, hoverIndex: hoverIndex ?? this.hoverIndex);
+  }
+
+  static double _calculateCellWidth(List<NavbarModel> items) {
+    const maxVisible = 5;
+    final visibleCount = items.length > maxVisible ? maxVisible : items.length;
+    return Sizes.screenWidth / visibleCount;
+  }
+}
 
 class VideoOverlayState {
   final bool showPlayPauseOverlay;
