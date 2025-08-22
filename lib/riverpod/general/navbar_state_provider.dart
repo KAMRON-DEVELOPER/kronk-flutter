@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/riverpod/general/storage_provider.dart';
 import 'package:kronk/utility/classes.dart';
-import 'package:kronk/utility/my_logger.dart';
 
 final navbarStateProvider = NotifierProvider<NavbarStateNotifier, NavbarState>(() => NavbarStateNotifier());
 
@@ -36,7 +35,6 @@ class NavbarStateNotifier extends Notifier<NavbarState> {
   Future<void> reorderNavbarItem({required int oldIndex, required int newIndex, bool appliedToEnabled = false}) async {
     final storage = ref.watch(storageProvider);
     final navbarItems = [...state.items];
-    myLogger.e('before navbarItems -> ${navbarItems.map((e) => e.route)}');
 
     if (appliedToEnabled) {
       final enabledItems = navbarItems.where((e) => e.isEnabled).toList();
@@ -50,7 +48,6 @@ class NavbarStateNotifier extends Notifier<NavbarState> {
       final item = navbarItems.removeAt(actualOldIndex);
       navbarItems.insert(actualNewIndex, item);
 
-      myLogger.e('after navbarItems -> ${navbarItems.map((e) => e.route)}');
       state = state.copyWith(items: navbarItems);
       await storage.reorderNavbarItem(oldIndex: actualOldIndex, newIndex: actualNewIndex);
     } else {
@@ -59,7 +56,6 @@ class NavbarStateNotifier extends Notifier<NavbarState> {
       final item = navbarItems.removeAt(oldIndex);
       navbarItems.insert(newIndex, item);
 
-      myLogger.e('after navbarItems -> ${navbarItems.map((e) => e.route)}');
       state = state.copyWith(items: navbarItems);
       await storage.reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex);
     }

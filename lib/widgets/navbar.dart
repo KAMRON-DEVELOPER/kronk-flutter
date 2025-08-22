@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kronk/models/navbar_model.dart';
 import 'package:kronk/riverpod/general/navbar_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
-import 'package:kronk/utility/my_logger.dart';
 
 /// Navbar
 class Navbar extends ConsumerStatefulWidget {
@@ -34,13 +34,6 @@ class _NavbarState extends ConsumerState<Navbar> {
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider);
     final navbarState = ref.watch(navbarStateProvider);
-
-    ref.listen(navbarStateProvider, (previous, next) {
-      myLogger.e(
-        'previous.items: ${previous?.items.map((e) => e.route).toList()}\n'
-        'next.items: ${next.items.map((e) => e.route).toList()}\n',
-      );
-    });
 
     return Container(
       height: navbarState.navbarHeight,
@@ -83,7 +76,12 @@ class _NavbarState extends ConsumerState<Navbar> {
                     child: SizedBox(
                       width: navbarState.items.length * navbarState.cellWidth,
                       height: navbarState.navbarHeight,
-                      child: const Stack(children: [DragTargetsLayer(), AnimatedIconsLayer()]),
+                      child: Stack(
+                        children: [
+                          DragTargetsLayer(scrollController: scrollController),
+                          const AnimatedIconsLayer(),
+                        ],
+                      ),
                     ),
                   ),
           ),
@@ -95,21 +93,21 @@ class _NavbarState extends ConsumerState<Navbar> {
 
 /// DragTargetsLayer
 class DragTargetsLayer extends ConsumerWidget {
-  const DragTargetsLayer({super.key});
+  final ScrollController scrollController;
+
+  const DragTargetsLayer({super.key, required this.scrollController});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final navbarState = ref.watch(navbarStateProvider);
     final notifier = ref.read(navbarStateProvider.notifier);
 
-    final scrollController = (context.findAncestorStateOfType<_NavbarState>())!.scrollController;
-
     return Row(
       children: List.generate(navbarState.items.length, (index) {
         return DragTarget<int>(
           onMove: (details) {
             final itemSize = Size(navbarState.cellWidth, navbarState.navbarHeight);
-            final targetOffset = Offset(index * navbarState.cellWidth, Sizes.screenHeight - navbarState.navbarHeight);
+            final targetOffset = Offset(index * navbarState.cellWidth - scrollController.offset, Sizes.screenHeight - navbarState.navbarHeight);
             final fingerOffset = details.offset;
             final targetRect = targetOffset & itemSize;
             final feedbackRect = fingerOffset & itemSize;
@@ -119,26 +117,20 @@ class DragTargetsLayer extends ConsumerWidget {
             final targetArea = targetRect.width * targetRect.height;
             final overlapRatio = overlapArea / targetArea;
 
-            myLogger.e(
-              'onMove (ti: $index, fi: ${details.data}, di: ${navbarState.dragIndex}, hi: ${navbarState.hoverIndex}), overlapRatio: $overlapRatio, update hover: ${overlapRatio > 0.6 && navbarState.hoverIndex != index}',
-            );
-
             if (overlapRatio > 0.6 && navbarState.hoverIndex != index) notifier.update(navbarState: navbarState.copyWith(hoverIndex: index));
           },
-          onWillAcceptWithDetails: (details) {
-            myLogger.e('onWillAcceptWithDetails fi: ${details.data}, ti: $index, accept: ${details.data != index}');
-            return details.data != index;
-          },
+          onWillAcceptWithDetails: (details) => details.data != index,
           onAcceptWithDetails: (details) async {
-            final items = ref.read(navbarStateProvider.select((e) => e.items)).where((item) => item.isEnabled).toList();
+            final items = ref.read(navbarStateProvider.select((e) => e.items)).where((e) => e.isEnabled).toList();
             final activeItem = items.elementAt(navbarState.activeIndex);
 
             await notifier.reorderNavbarItem(oldIndex: details.data, newIndex: index, appliedToEnabled: true);
 
-            final newItems = ref.read(navbarStateProvider.select((e) => e.items)).where((item) => item.isEnabled).toList();
+            final stateAfter = ref.read(navbarStateProvider);
+            final newItems = stateAfter.items.where((e) => e.isEnabled).toList();
             final newActiveIndex = newItems.indexOf(activeItem);
 
-            if (newActiveIndex != -1) notifier.update(navbarState: navbarState.copyWith(activeIndex: newActiveIndex));
+            if (newActiveIndex != -1) notifier.update(navbarState: stateAfter.copyWith(activeIndex: newActiveIndex));
           },
           builder: (context, candidateData, rejectedData) => Container(
             width: navbarState.cellWidth,
@@ -190,43 +182,91 @@ class AnimatedIconsLayer extends ConsumerWidget {
             data: index,
             dragAnchorStrategy: childDragAnchorStrategy,
             onDragStarted: () => notifier.update(navbarState: navbarState.copyWith(dragIndex: index)),
+            // onDragEnd: (details) async {
+            //   final currentState = ref.read(navbarStateProvider);
+            //   final enabledItemsBefore = currentState.items.where((item) => item.isEnabled).toList();
+            //   final activeItem = enabledItemsBefore.elementAt(currentState.activeIndex);
+            //   final dragIndex = currentState.dragIndex;
+            //
+            //   if (details.wasAccepted) {
+            //     notifier.update(navbarState: currentState.copyWith(dragIndex: null, hoverIndex: null));
+            //     return;
+            //   }
+            //
+            //   final fingerOffset = details.offset;
+            //   final feedbackRect = Rect.fromCenter(center: fingerOffset, width: currentState.cellWidth, height: currentState.navbarHeight);
+            //   final barRect = Rect.fromLTWH(0, Sizes.screenHeight - currentState.navbarHeight, Sizes.screenWidth, currentState.navbarHeight);
+            //   final isOverlapping = barRect.overlaps(feedbackRect);
+            //
+            //   if (dragIndex != null && !isOverlapping) {
+            //     await notifier.toggleNavbarItem(index: dragIndex, appliedToEnabled: true);
+            //
+            //     final stateAfterToggle = ref.read(navbarStateProvider);
+            //     final enabledItemsAfter = stateAfterToggle.items.where((item) => item.isEnabled).toList();
+            //     final newActiveIndex = enabledItemsAfter.indexOf(activeItem);
+            //
+            //     if (newActiveIndex != -1) {
+            //       notifier.update(navbarState: stateAfterToggle.copyWith(activeIndex: newActiveIndex));
+            //     } else if (enabledItemsAfter.isNotEmpty) {
+            //       notifier.update(navbarState: stateAfterToggle.copyWith(activeIndex: 0));
+            //       if (!context.mounted) return;
+            //       context.go(enabledItemsAfter.first.route);
+            //     } else {
+            //       if (!context.mounted) return;
+            //       context.go('/welcome');
+            //     }
+            //   }
+            //
+            //   final latestState = ref.read(navbarStateProvider);
+            //   notifier.update(navbarState: latestState.copyWith(dragIndex: null, hoverIndex: null));
+            // },
             onDragEnd: (details) async {
               final currentState = ref.read(navbarStateProvider);
               final enabledItemsBefore = currentState.items.where((item) => item.isEnabled).toList();
-              final activeItem = enabledItemsBefore.elementAt(currentState.activeIndex);
+
+              NavbarModel? activeItem;
+              if (currentState.activeIndex >= 0 && currentState.activeIndex < enabledItemsBefore.length) {
+                activeItem = enabledItemsBefore.elementAt(currentState.activeIndex);
+              }
+
               final dragIndex = currentState.dragIndex;
 
               if (details.wasAccepted) {
-                notifier.update(navbarState: currentState.copyWith(dragIndex: null, hoverIndex: null));
+                final latest = ref.read(navbarStateProvider);
+                notifier.update(navbarState: latest.copyWith(dragIndex: null, hoverIndex: null));
                 return;
               }
 
+              // Compute overlap with navbar rect (to decide toggle/remove)
               final fingerOffset = details.offset;
               final feedbackRect = Rect.fromCenter(center: fingerOffset, width: currentState.cellWidth, height: currentState.navbarHeight);
-              final barRect = Rect.fromLTWH(0, Sizes.screenHeight - currentState.navbarHeight, enabledItemsBefore.length * currentState.cellWidth, currentState.navbarHeight);
+              final barRect = Rect.fromLTWH(0, Sizes.screenHeight - currentState.navbarHeight, Sizes.screenWidth, currentState.navbarHeight);
               final isOverlapping = barRect.overlaps(feedbackRect);
 
               if (dragIndex != null && !isOverlapping) {
                 await notifier.toggleNavbarItem(index: dragIndex, appliedToEnabled: true);
-
-                final stateAfterToggle = ref.read(navbarStateProvider);
-                final enabledItemsAfter = stateAfterToggle.items.where((item) => item.isEnabled).toList();
-                final newActiveIndex = enabledItemsAfter.indexOf(activeItem);
-
-                if (newActiveIndex != -1) {
-                  notifier.update(navbarState: stateAfterToggle.copyWith(activeIndex: newActiveIndex));
-                } else if (enabledItemsAfter.isNotEmpty) {
-                  notifier.update(navbarState: stateAfterToggle.copyWith(activeIndex: 0));
-                  if (!context.mounted) return;
-                  context.go(enabledItemsAfter.first.route);
-                } else {
-                  if (!context.mounted) return;
-                  context.go('/welcome');
-                }
               }
 
-              final latestState = ref.read(navbarStateProvider);
-              notifier.update(navbarState: latestState.copyWith(dragIndex: null, hoverIndex: null));
+              final stateAfter = ref.read(navbarStateProvider);
+              final enabledItemsAfter = stateAfter.items.where((item) => item.isEnabled).toList();
+
+              int newActiveIndex = stateAfter.activeIndex;
+
+              if (activeItem != null) {
+                newActiveIndex = enabledItemsAfter.indexOf(activeItem);
+              }
+
+              if (newActiveIndex != -1) {
+                notifier.update(navbarState: stateAfter.copyWith(dragIndex: null, hoverIndex: null, activeIndex: newActiveIndex));
+              } else if (enabledItemsAfter.isNotEmpty) {
+                notifier.update(navbarState: stateAfter.copyWith(dragIndex: null, hoverIndex: null, activeIndex: 0));
+                if (!context.mounted) return;
+                context.go(enabledItemsAfter.first.route);
+              } else {
+                notifier.update(navbarState: stateAfter.copyWith(dragIndex: null, hoverIndex: null, activeIndex: -1));
+                if (!context.mounted) return;
+                context.go('/welcome');
+              }
             },
             childWhenDragging: const SizedBox.shrink(),
             feedback: Material(
