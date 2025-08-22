@@ -14,7 +14,6 @@ import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
 import 'package:kronk/widgets/custom_drawer.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 class VocabulariesScreen extends ConsumerWidget {
   const VocabulariesScreen({super.key});
@@ -95,7 +94,6 @@ class VocabulariesScreen extends ConsumerWidget {
             const TabBarView(children: [VocabulariesTab(), SentencesTab()]),
           ],
         ),
-        bottomNavigationBar: const Navbar(),
         drawer: const CustomDrawer(),
       ),
     );

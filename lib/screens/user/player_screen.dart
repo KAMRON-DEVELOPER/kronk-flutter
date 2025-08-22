@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/constants/my_theme.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 import '../../riverpod/general/theme_provider.dart';
 
@@ -25,7 +24,6 @@ class _EducationScreenState extends ConsumerState<PlayerScreen> {
           children: <Widget>[Text('Player Screen', style: TextStyle(color: currentTheme.primaryText, fontSize: 36))],
         ),
       ),
-      bottomNavigationBar: const Navbar(),
     );
   }
 }

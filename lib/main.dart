@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kronk/constants/my_theme.dart';
-import 'package:kronk/riverpod/general/navbar_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/router.dart';
 import 'package:kronk/utility/setup.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 final googleSignIn = GoogleSignIn.instance;
 
@@ -21,54 +19,22 @@ void main() async {
   runApp(ProviderScope(child: MyApp(router: router)));
 }
 
-class MyApp extends ConsumerStatefulWidget {
+class MyApp extends ConsumerWidget {
   final GoRouter router;
 
   const MyApp({super.key, required this.router});
 
   @override
-  ConsumerState<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends ConsumerState<MyApp> {
-  final PageStorageBucket _bucket = PageStorageBucket();
-
-  @override
-  void initState() {
-    super.initState();
-    widget.router.routerDelegate.addListener(() => _listenRouterChanges(fullPath: widget.router.routerDelegate.currentConfiguration.fullPath));
-  }
-
-  @override
-  void dispose() {
-    widget.router.routerDelegate.removeListener(() => _listenRouterChanges(fullPath: widget.router.routerDelegate.currentConfiguration.fullPath));
-    super.dispose();
-  }
-
-  void _listenRouterChanges({required String fullPath}) {
-    final navbarItems = ref.read(navbarItemsProvider);
-    final enabledRoutes = navbarItems.where((e) => e.isEnabled).toList();
-    final enabledRoutesString = enabledRoutes.map((e) => e.route).toList();
-
-    final index = enabledRoutesString.indexWhere((route) => fullPath.startsWith(route));
-    if (index != -1) {
-      ref.read(activeNavbarIndexProvider.notifier).state = index;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final MyTheme theme = ref.watch(themeProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
     Sizes.init(context);
+    final MyTheme theme = ref.watch(themeProvider);
 
     return MaterialApp.router(
       title: 'Kronk',
       debugShowCheckedModeBanner: false,
-      routerDelegate: widget.router.routerDelegate,
-      routeInformationParser: widget.router.routeInformationParser,
-      routeInformationProvider: widget.router.routeInformationProvider,
-
-      builder: (context, child) => PageStorage(bucket: _bucket, child: child!),
+      routerDelegate: router.routerDelegate,
+      routeInformationParser: router.routeInformationParser,
+      routeInformationProvider: router.routeInformationProvider,
 
       theme: ThemeData(
         useMaterial3: true,

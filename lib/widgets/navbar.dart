@@ -7,9 +7,9 @@ import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/utility/my_logger.dart';
 
 final activeNavbarIndexProvider = StateProvider<int>((ref) => 0);
-final navbarScrollOffsetProvider = StateProvider<double>((ref) => 0.0);
 
 /// Navbar
 class Navbar extends ConsumerStatefulWidget {
@@ -22,7 +22,6 @@ class Navbar extends ConsumerStatefulWidget {
 class _NavbarState extends ConsumerState<Navbar> {
   late final ScrollController scrollController;
   late NavbarState navbarState;
-  bool _isRestoringPosition = false;
 
   @override
   void initState() {
@@ -30,31 +29,10 @@ class _NavbarState extends ConsumerState<Navbar> {
     scrollController = ScrollController();
     final items = ref.read(navbarItemsProvider).where((e) => e.isEnabled).toList();
     navbarState = NavbarState(items: items);
-    scrollController.addListener(_saveScrollOffset);
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) => _restoreScrollOffset());
-  }
-
-  void _saveScrollOffset() {
-    if (!_isRestoringPosition && scrollController.hasClients) {
-      Future.microtask(() {
-        if (mounted) ref.read(navbarScrollOffsetProvider.notifier).state = scrollController.offset;
-      });
-    }
-  }
-
-  void _restoreScrollOffset() {
-    final savedPosition = ref.read(navbarScrollOffsetProvider);
-    if (scrollController.hasClients && savedPosition > 0) {
-      _isRestoringPosition = true;
-      scrollController
-          .animateTo(savedPosition.clamp(0.0, scrollController.position.maxScrollExtent), duration: const Duration(milliseconds: 200), curve: Curves.easeOut)
-          .then((value) => _isRestoringPosition = false);
-    }
   }
 
   @override
   void dispose() {
-    scrollController.removeListener(_saveScrollOffset);
     scrollController.dispose();
     super.dispose();
   }
@@ -70,8 +48,7 @@ class _NavbarState extends ConsumerState<Navbar> {
       }
     });
 
-    final barRect = Rect.fromLTWH(0, Sizes.screenHeight - navbarState.navbarHeight, Sizes.screenWidth, navbarState.navbarHeight);
-
+    myLogger.e('Navbar is building');
     return Container(
       height: navbarState.navbarHeight,
       decoration: BoxDecoration(
@@ -159,6 +136,7 @@ class _NavbarState extends ConsumerState<Navbar> {
                               final fingerOffset = details.offset;
                               final feedbackRect = Rect.fromCenter(center: fingerOffset, width: navbarState.cellWidth, height: navbarState.navbarHeight);
 
+                              final barRect = Rect.fromLTWH(0, Sizes.screenHeight - navbarState.navbarHeight, Sizes.screenWidth, navbarState.navbarHeight);
                               final isOverlapping = barRect.overlaps(feedbackRect);
                               final dragIndex = navbarState.dragIndex;
 

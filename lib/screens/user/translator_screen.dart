@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 class TranslatorScreen extends ConsumerWidget {
   const TranslatorScreen({super.key});
@@ -44,7 +43,6 @@ class TranslatorScreen extends ConsumerWidget {
       body: Center(
         child: Text('Will be available soon, ⌛', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 24, fontWeight: FontWeight.bold)),
       ),
-      bottomNavigationBar: const Navbar(),
     );
   }
 }

@@ -21,7 +21,6 @@ import 'package:kronk/widgets/custom_drawer.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
 import 'package:kronk/widgets/feed/feed_notification_widget.dart';
 import 'package:kronk/widgets/main_appbar.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 final feedsScreenTabIndexProvider = StateProvider<int>((ref) => 0);
 final sharedFeed = StateProvider<FeedModel?>((ref) => null);
@@ -93,7 +92,6 @@ class FeedsScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            bottomNavigationBar: const Navbar(),
             drawer: const CustomDrawer(),
           );
         },

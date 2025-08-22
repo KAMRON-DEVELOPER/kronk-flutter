@@ -21,7 +21,6 @@ import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_drawer.dart';
 import 'package:kronk/widgets/main_appbar.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 /// ChatsScreen
 class ChatsScreen extends ConsumerWidget {
@@ -63,7 +62,6 @@ class ChatsScreen extends ConsumerWidget {
             const TabBarView(children: [ChatsTabBar(), GroupsTabBar()]),
           ],
         ),
-        bottomNavigationBar: const Navbar(),
         drawer: const CustomDrawer(),
       ),
     );

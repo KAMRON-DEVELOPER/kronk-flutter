@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 class EducationScreen extends ConsumerStatefulWidget {
   const EducationScreen({super.key});
@@ -23,7 +22,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
           children: [Text('Education Screen', style: TextStyle(color: activeTheme.primaryText, fontSize: 36))],
         ),
       ),
-      bottomNavigationBar: const Navbar(),
     );
   }
 }

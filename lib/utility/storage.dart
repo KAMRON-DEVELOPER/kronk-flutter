@@ -163,61 +163,11 @@ class Storage {
 
   Future<void> deleteAsyncSettingsAll({required List<String> keys}) async => await settingsBox.deleteAll(keys);
 
-  FeedScreenDisplayState getFeedScreenDisplayStyle() {
-    final String feedScreenDisplayStyleName = settingsBox.get('feedScreenDisplayStyle', defaultValue: LayoutStyle.floating.name);
-    final String feedScreenBackgroundImagePath = settingsBox.get('feedScreenBackgroundImagePath', defaultValue: 'assets/images/13.jpeg');
-    final double feedScreenCardOpacity = settingsBox.get('feedScreenCardOpacity', defaultValue: 1.0);
-    final double feedScreenCardBorderRadius = settingsBox.get('feedScreenCardBorderRadius', defaultValue: 12.0);
-
-    return FeedScreenDisplayState(
-      screenStyle: LayoutStyle.values.firstWhere((style) => style.name == feedScreenDisplayStyleName, orElse: () => LayoutStyle.floating),
-      backgroundImagePath: feedScreenBackgroundImagePath,
-      cardOpacity: feedScreenCardOpacity,
-      cardBorderRadius: feedScreenCardBorderRadius,
-    );
-  }
-
-  Future<void> setFeedScreenDisplayStyleAsync({required FeedScreenDisplayState feedScreenDisplayState}) async {
-    final entries = {
-      'feedScreenDisplayStyle': feedScreenDisplayState.screenStyle.name,
-      'feedScreenCardOpacity': feedScreenDisplayState.cardOpacity,
-      'feedScreenCardBorderRadius': feedScreenDisplayState.cardBorderRadius,
-      'feedScreenBackgroundImagePath': feedScreenDisplayState.backgroundImagePath,
-    };
-
-    await settingsBox.putAll(entries);
-  }
-
-  ChatsScreenDisplayState getChatsScreenDisplayStyle() {
-    final String screenStyle = settingsBox.get('chatsScreenDisplayStyle', defaultValue: LayoutStyle.floating.name);
-    final String backgroundImagePath = settingsBox.get('chatsScreenBackgroundImagePath', defaultValue: 'assets/images/7.jpeg');
-    final double tileOpacity = settingsBox.get('chatsScreenTileOpacity', defaultValue: 1.0);
-    final double tileBorderRadius = settingsBox.get('chatsScreeTileBorderRadius', defaultValue: 12.0);
-
-    return ChatsScreenDisplayState(
-      screenStyle: LayoutStyle.values.byName(screenStyle),
-      backgroundImagePath: backgroundImagePath,
-      tileOpacity: tileOpacity,
-      tileBorderRadius: tileBorderRadius,
-    );
-  }
-
-  Future<void> setChatsScreenDisplayStyleAsync({required ChatsScreenDisplayState chatsScreenDisplayState}) async {
-    final entries = {
-      'chatsScreenDisplayStyle': chatsScreenDisplayState.screenStyle.name,
-      'chatsScreenTileOpacity': chatsScreenDisplayState.tileOpacity,
-      'chatsScreenTileBorderRadius': chatsScreenDisplayState.tileBorderRadius,
-      'chatsScreenBackgroundImagePath': chatsScreenDisplayState.backgroundImagePath,
-    };
-
-    await settingsBox.putAll(entries);
-  }
-
   ScreenStyleState getScreenStyleState({required String screenName}) {
     final String layoutStyle = settingsBox.get('${screenName}layoutStyle', defaultValue: LayoutStyle.floating.name);
     final double opacity = settingsBox.get('${screenName}opacity', defaultValue: 1.0);
     final double borderRadius = settingsBox.get('${screenName}borderRadius', defaultValue: 12.0);
-    final String backgroundImage = settingsBox.get('${screenName}backgroundImage', defaultValue: 'assets/images/7.jpeg');
+    final String backgroundImage = settingsBox.get('${screenName}backgroundImage', defaultValue: 'assets/images/23.jpeg');
 
     return ScreenStyleState(
       screenName: screenName,

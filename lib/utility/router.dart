@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kronk/bloc/authentication/authentication_bloc.dart';
 import 'package:kronk/constants/enums.dart';
+import 'package:kronk/riverpod/general/navbar_provider.dart';
 import 'package:kronk/screens/chat/chat_screen.dart';
 import 'package:kronk/screens/chat/chats_screen.dart';
 import 'package:kronk/screens/education/education_screen.dart';
@@ -22,7 +24,33 @@ import 'package:kronk/screens/user/translator_screen.dart';
 import 'package:kronk/screens/user/verify_screen.dart';
 import 'package:kronk/screens/user/welcome_screen.dart';
 import 'package:kronk/screens/vocabulary/vocabularies_screen.dart';
+import 'package:kronk/utility/dimensions.dart';
+import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/widgets/image_cropper_screen.dart';
+import 'package:kronk/widgets/navbar.dart';
+
+class MainShell extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const MainShell({super.key, required this.navigationShell});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const List<String> fullscreenRoutes = ['/feeds/feed', '/chats/chat', '/profile/preview', '/profile/edit', '/image_cropper', '/entertainment'];
+    final String location = GoRouterState.of(context).uri.toString();
+    final bool isNavbarHidden = fullscreenRoutes.any((route) => location.startsWith(route));
+    myLogger.e('isNavbarHidden: $isNavbarHidden');
+
+    final items = ref.read(navbarItemsProvider).where((e) => e.isEnabled).map((e) => e.route).toList();
+    final index = items.indexWhere((route) => location.startsWith(route));
+    if (index != -1) WidgetsBinding.instance.addPostFrameCallback((timeStamp) => ref.read(activeNavbarIndexProvider.notifier).state = index);
+
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: AnimatedContainer(duration: const Duration(milliseconds: 200), height: isNavbarHidden ? 0 : Sizes.navbarHeight, child: const Navbar()),
+    );
+  }
+}
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: '_rootNavigatorKey');
 final _feedsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: '_feedsNavigatorKey');
@@ -94,7 +122,7 @@ class AppRouter {
         ),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => navigationShell,
+        builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             navigatorKey: _feedsNavigatorKey,

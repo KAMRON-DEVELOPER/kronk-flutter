@@ -21,7 +21,6 @@ import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
-import 'package:kronk/widgets/navbar.dart';
 import 'package:kronk/widgets/profile/custom_painters.dart';
 import 'package:tuple/tuple.dart';
 
@@ -67,7 +66,6 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ],
         ),
-        bottomNavigationBar: const Navbar(),
       ),
     );
   }

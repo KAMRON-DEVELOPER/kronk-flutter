@@ -9,7 +9,6 @@ import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 class NotesScreen extends ConsumerWidget {
   const NotesScreen({super.key});
@@ -79,7 +78,6 @@ class NotesScreen extends ConsumerWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const Navbar(),
     );
   }
 }

@@ -20,7 +20,6 @@ import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
-import 'package:kronk/widgets/navbar.dart';
 
 final searchScreenTabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -107,7 +106,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with AutomaticKeepA
         ),
       ),
       body: TabBarView(controller: _tabController, children: [const FeedSearchWidget(), const UserSearchWidget()]),
-      bottomNavigationBar: const Navbar(),
     );
   }
 }
