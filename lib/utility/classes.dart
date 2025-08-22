@@ -10,15 +10,25 @@ import 'package:kronk/utility/dimensions.dart';
 /// Drag NavbarState
 class NavbarState {
   final List<NavbarModel> items;
+  final int activeIndex;
   final int? dragIndex;
   final int? hoverIndex;
   final double cellWidth;
   final double navbarHeight;
 
-  NavbarState({required this.items, this.dragIndex, this.hoverIndex}) : cellWidth = _calculateCellWidth(items), navbarHeight = Sizes.navbarHeight + Sizes.viewPaddingBottom;
+  NavbarState({required this.items, this.activeIndex = 0, this.dragIndex, this.hoverIndex})
+    : cellWidth = _calculateCellWidth(items),
+      navbarHeight = Sizes.navbarHeight + Sizes.viewPaddingBottom;
 
-  NavbarState copyWith({List<NavbarModel>? items, int? dragIndex, int? hoverIndex}) {
-    return NavbarState(items: items ?? this.items, dragIndex: dragIndex ?? this.dragIndex, hoverIndex: hoverIndex ?? this.hoverIndex);
+  static const _sentinel = Object();
+
+  NavbarState copyWith({List<NavbarModel>? items, int? activeIndex, Object? dragIndex = _sentinel, Object? hoverIndex = _sentinel}) {
+    return NavbarState(
+      items: items ?? this.items,
+      activeIndex: activeIndex ?? this.activeIndex,
+      dragIndex: dragIndex == _sentinel ? this.dragIndex : dragIndex as int?,
+      hoverIndex: hoverIndex == _sentinel ? this.hoverIndex : hoverIndex as int?,
+    );
   }
 
   static double _calculateCellWidth(List<NavbarModel> items) {

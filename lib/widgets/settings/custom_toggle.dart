@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kronk/constants/my_theme.dart';
-import 'package:kronk/riverpod/general/navbar_provider.dart';
+import 'package:kronk/riverpod/general/navbar_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/utility/extensions.dart';
 
@@ -16,7 +16,7 @@ class CustomToggle extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
     return GestureDetector(
-      onTap: toggleable ? () async => await ref.read(navbarItemsProvider.notifier).toggleNavbarItem(index: index) : null,
+      onTap: toggleable ? () async => await ref.read(navbarStateProvider.notifier).toggleNavbarItem(index: index) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 48.dp,

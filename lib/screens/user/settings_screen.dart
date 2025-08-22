@@ -8,7 +8,7 @@ import 'package:kronk/bloc/authentication/authentication_event.dart';
 import 'package:kronk/bloc/authentication/authentication_state.dart';
 import 'package:kronk/constants/my_theme.dart';
 import 'package:kronk/models/statistics_model.dart';
-import 'package:kronk/riverpod/general/navbar_provider.dart';
+import 'package:kronk/riverpod/general/navbar_state_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/riverpod/settings/settings_statistics.dart';
 import 'package:kronk/services/api_service/config_service.dart';
@@ -179,7 +179,7 @@ class SectionLabelWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
-    final bool isAnyServiceEnabled = ref.watch(navbarItemsProvider.select((items) => items.any((item) => item.isEnabled)));
+    final bool isAnyServiceEnabled = ref.watch(navbarStateProvider.select((e) => e.items.any((item) => item.isEnabled)));
 
     return SliverToBoxAdapter(
       child: Container(
@@ -290,15 +290,15 @@ class ServicesSectionWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final services = ref.watch(navbarItemsProvider);
+    final navbarState = ref.watch(navbarStateProvider);
 
     return SliverPadding(
       padding: EdgeInsets.only(left: 16.dp, top: 4.dp, right: 16.dp),
       sliver: SliverReorderableList(
-        itemCount: services.length,
-        onReorder: (int oldIndex, int newIndex) async => await ref.read(navbarItemsProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex),
+        itemCount: navbarState.items.length,
+        onReorder: (int oldIndex, int newIndex) async => await ref.read(navbarStateProvider.notifier).reorderNavbarItem(oldIndex: oldIndex, newIndex: newIndex),
         itemBuilder: (context, index) {
-          final service = services.elementAt(index);
+          final service = navbarState.items.elementAt(index);
 
           return ReorderableDelayedDragStartListener(
             key: ValueKey(service.route),
@@ -535,15 +535,15 @@ class DisappointingSectionWidget extends ConsumerWidget {
             listener: (context, state) {
               if (state is SignOutSuccess) {
                 showToast(context, ref, ToastificationType.info, "You've been signed out");
-                ref.invalidate(navbarItemsProvider);
+                ref.invalidate(navbarStateProvider);
                 context.go('/welcome');
               } else if (state is GoogleSignOutSuccess) {
                 showToast(context, ref, ToastificationType.info, 'Signed out from your Google account');
-                ref.invalidate(navbarItemsProvider);
+                ref.invalidate(navbarStateProvider);
                 context.go('/welcome');
               } else if (state is AppleSignOutSuccess) {
                 showToast(context, ref, ToastificationType.info, 'Signed out from Apple. Your account has been revoked and unlinked');
-                ref.invalidate(navbarItemsProvider);
+                ref.invalidate(navbarStateProvider);
                 context.go('/welcome');
               }
             },
@@ -614,7 +614,7 @@ class BackButtonWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final MyTheme theme = ref.watch(themeProvider);
-    final bool isAnyServiceEnabled = ref.watch(navbarItemsProvider).any((service) => service.isEnabled);
+    final bool isAnyServiceEnabled = ref.watch(navbarStateProvider.select((e) => e.items)).any((service) => service.isEnabled);
 
     return IconButton(
       onPressed: () {
