@@ -2,7 +2,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/models/user_model.dart';
 
-class UserAdapter extends TypeAdapter<UserModel> {
+class UserModelAdapter extends TypeAdapter<UserModel> {
   @override
   final int typeId = 1;
 

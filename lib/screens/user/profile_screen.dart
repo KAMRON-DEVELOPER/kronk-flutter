@@ -10,6 +10,7 @@ import 'package:kronk/models/chat_model.dart';
 import 'package:kronk/models/feed_model.dart';
 import 'package:kronk/models/user_model.dart';
 import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
+import 'package:kronk/riverpod/general/storage_provider.dart';
 import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/riverpod/profile/engagement_feeds.dart';
 import 'package:kronk/riverpod/profile/profile_provider.dart';
@@ -19,7 +20,7 @@ import 'package:kronk/utility/constants.dart';
 import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
-import 'package:kronk/utility/storage.dart';
+import 'package:kronk/utility/router.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
 import 'package:kronk/widgets/profile/custom_painters.dart';
 import 'package:tuple/tuple.dart';
@@ -27,44 +28,43 @@ import 'package:tuple/tuple.dart';
 final sharedUser = StateProvider<UserModel?>((ref) => null);
 
 /// ProfileScreen
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   final String? targetUserId;
 
   const ProfileScreen({super.key, this.targetUserId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('feeds'));
-    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-    return DefaultTabController(
-      length: EngagementType.values.length,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            /// static image
-            if (isFloating)
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.4,
-                  child: Image.asset(
-                    screenStyle.backgroundImage,
-                    fit: BoxFit.cover,
-                    cacheWidth: Sizes.screenWidth.cacheSize(context),
-                    cacheHeight: Sizes.screenHeight.cacheSize(context),
-                  ),
-                ),
-              ),
+class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
-            /// Content
-            NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [SliverToBoxAdapter(child: ProfileHeaderWidget(targetUserId: targetUserId))],
-              body: TabBarView(
-                children: EngagementType.values.map((type) => EngagementTab(targetUserId: targetUserId, engagementType: type)).toList(),
-              ),
-            ),
-          ],
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: EngagementType.values.length, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenConfigurator(
+      resizeToAvoidBottomInset: false,
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: ProfileHeaderWidget(tabController: _tabController, targetUserId: widget.targetUserId),
+          ),
+        ],
+        body: TabBarView(
+          controller: _tabController,
+          children: EngagementType.values.map((e) => EngagementTab(targetUserId: widget.targetUserId, engagementType: e)).toList(),
         ),
       ),
     );
@@ -72,32 +72,19 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 /// ProfileHeaderWidget
-class ProfileHeaderWidget extends ConsumerStatefulWidget {
+class ProfileHeaderWidget extends ConsumerWidget {
+  final TabController tabController;
   final String? targetUserId;
 
-  const ProfileHeaderWidget({super.key, this.targetUserId});
+  const ProfileHeaderWidget({super.key, required this.tabController, this.targetUserId});
 
   @override
-  ConsumerState<ProfileHeaderWidget> createState() => _ProfileHeaderWidgetState();
-}
-
-class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
-  late UserModel? cachedUser;
-  late Storage storage;
-
-  @override
-  void initState() {
-    super.initState();
-    storage = Storage();
-    cachedUser = storage.getUser();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AsyncValue<UserModel> asyncUser = ref.watch(profileNotifierProvider(widget.targetUserId));
-    return asyncUser.when(
-      data: (UserModel user) => ProfileCard(user: user, targetUserId: widget.targetUserId),
-      loading: () => cachedUser != null ? ProfileCard(user: cachedUser!) : const Center(child: CircularProgressIndicator()),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(profileNotifierProvider(targetUserId));
+    final cachedUser = ref.read(storageProvider).getUser();
+    return user.when(
+      data: (UserModel user) => ProfileCard(tabController: tabController, user: user, targetUserId: targetUserId),
+      loading: () => ProfileCard(tabController: tabController, user: cachedUser),
       error: (Object error, StackTrace _) => Center(
         child: Text('Error: $error', style: const TextStyle(color: Colors.redAccent)),
       ),
@@ -107,10 +94,11 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 
 /// ProfileCard
 class ProfileCard extends ConsumerWidget {
+  final TabController tabController;
   final UserModel user;
   final String? targetUserId;
 
-  const ProfileCard({super.key, required this.user, this.targetUserId});
+  const ProfileCard({super.key, required this.tabController, required this.user, this.targetUserId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -288,6 +276,7 @@ class ProfileCard extends ConsumerWidget {
 
               /// TabBar
               TabBar(
+                controller: tabController,
                 isScrollable: true,
                 dividerHeight: 1.dp,
                 dividerColor: theme.outline,

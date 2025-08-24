@@ -123,7 +123,7 @@ class FeedHeaderSection extends ConsumerWidget {
                   if (user.id == feed.author.id) {
                     context.go('/profile');
                   } else {
-                    context.pushNamed('previewProfile', extra: feed.author.id);
+                    context.pushNamed('preview', extra: feed.author.id);
                   }
                 },
                 child: ClipRRect(

@@ -24,56 +24,60 @@ class VocabulariesState {
 final vocabulariesProvider = AutoDisposeAsyncNotifierProvider<VocabulariesNotifier, VocabulariesState>(VocabulariesNotifier.new);
 
 class VocabulariesNotifier extends AutoDisposeAsyncNotifier<VocabulariesState> {
-  late VocabularyService _vocabularyService;
   int _offset = 0;
   final int _limit = 20;
 
   @override
   Future<VocabulariesState> build() async {
-    _vocabularyService = VocabularyService();
+    final VocabularyService vocabularyService = VocabularyService();
 
     ref.onDispose(() => myLogger.f('onDispose vocabulariesProvider'));
     ref.onCancel(() => myLogger.f('onCancel vocabulariesProvider'));
 
     try {
-      final response = await _vocabularyService.getVocabularies(offset: 0, limit: _limit);
+      final response = await vocabularyService.getVocabularies(offset: 0, limit: _limit);
       _offset = response.item1.length;
 
       return VocabulariesState(vocabularies: response.item1, total: response.item2, hasMore: response.item1.length < response.item2);
     } catch (error) {
-      state = AsyncValue.error(error, StackTrace.current);
-      return const VocabulariesState(hasMore: false);
+      throw Exception(error);
     }
   }
 
   Future<void> loadMore() async {
-    if (!state.value!.hasMore) return;
+    if (state.isLoading) return;
 
+    final currentState = state.value;
     state = const AsyncValue.loading();
-    final currentState = state.value!;
 
-    final response = await _vocabularyService.getVocabularies(offset: _offset, limit: _limit);
+    try {
+      final VocabularyService vocabularyService = VocabularyService();
+      final response = await vocabularyService.getVocabularies(offset: _offset, limit: _limit);
 
-    final newItems = response.item1;
-    final newTotal = response.item2;
-    final newVocabularies = [...currentState.vocabularies, ...newItems];
+      final newVocabularies = [...?currentState?.vocabularies, ...response.item1];
+      final newTotal = response.item2;
 
-    _offset += response.item1.length;
+      _offset += response.item1.length;
 
-    state = AsyncValue.data(VocabulariesState(vocabularies: newVocabularies, total: newTotal, hasMore: newVocabularies.length < newTotal));
+      state = AsyncValue.data(VocabulariesState(vocabularies: newVocabularies, total: newTotal, hasMore: newVocabularies.length < newTotal));
+    } catch (error, stackTrace) {
+      state = AsyncValue<VocabulariesState>.error(error, stackTrace).copyWithPrevious(state);
+    }
   }
 
   Future<void> refresh() async {
+    final VocabularyService vocabularyService = VocabularyService();
     _offset = 0;
     state = const AsyncValue.loading();
 
-    final response = await _vocabularyService.getVocabularies(offset: _offset, limit: _limit);
+    final response = await vocabularyService.getVocabularies(offset: _offset, limit: _limit);
     _offset = response.item1.length;
 
     state = AsyncValue.data(VocabulariesState(vocabularies: response.item1, total: response.item2, hasMore: response.item1.length < response.item2));
   }
 
   Future<void> createVocabularies({required List<File> images}) async {
+    final VocabularyService vocabularyService = VocabularyService();
     try {
       final formData = FormData();
 
@@ -84,7 +88,7 @@ class VocabulariesNotifier extends AutoDisposeAsyncNotifier<VocabulariesState> {
         formData.files.add(MapEntry('images', await MultipartFile.fromFile(image.path, filename: image.path.split('/').last, contentType: mediaType)));
       }
 
-      final ok = await _vocabularyService.createVocabularies(formData: formData);
+      final ok = await vocabularyService.createVocabularies(formData: formData);
       if (!ok) {
         state = AsyncError('Error occurred while creating vocabularies', StackTrace.current);
       }
@@ -95,8 +99,9 @@ class VocabulariesNotifier extends AutoDisposeAsyncNotifier<VocabulariesState> {
   }
 
   Future<void> deleteVocabularies({required List<String> vocabularyIds}) async {
+    final VocabularyService vocabularyService = VocabularyService();
     try {
-      final ok = await _vocabularyService.deleteVocabularies(vocabularyIds: vocabularyIds);
+      final ok = await vocabularyService.deleteVocabularies(vocabularyIds: vocabularyIds);
       if (!ok) {
         state = AsyncError('Error occurred while deleting vocabularies', StackTrace.current);
       }

@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
-
-import '../../models/note_model.dart';
+import 'package:kronk/models/note_model.dart';
 
 abstract class NotesState extends Equatable {
   const NotesState();
@@ -17,7 +16,7 @@ class NotesStateLoading extends NotesState {
 }
 
 class NotesStateSuccess extends NotesState {
-  final List<Note?> notesData;
+  final List<NoteModel?> notesData;
   const NotesStateSuccess({required this.notesData});
 
   @override

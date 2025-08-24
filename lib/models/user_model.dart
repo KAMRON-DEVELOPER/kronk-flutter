@@ -3,7 +3,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kronk/constants/enums.dart';
 import 'package:kronk/utility/extensions.dart';
 
-@HiveType(typeId: 1, adapterName: 'UserAdapter')
+@HiveType(typeId: 1, adapterName: 'UserModelAdapter')
 class UserModel extends Equatable {
   @HiveField(0)
   final String id;

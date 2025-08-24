@@ -12,7 +12,7 @@ class TranslatorScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: BaseAppBar(
         appBarHeight: 48,
         bottomHeight: 0,
         bottomGap: 4,

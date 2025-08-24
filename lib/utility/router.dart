@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kronk/bloc/authentication/authentication_bloc.dart';
 import 'package:kronk/constants/enums.dart';
+import 'package:kronk/riverpod/general/screen_style_state_provider.dart';
 import 'package:kronk/screens/chat/chat_screen.dart';
 import 'package:kronk/screens/chat/chats_screen.dart';
 import 'package:kronk/screens/education/education_screen.dart';
@@ -24,8 +25,62 @@ import 'package:kronk/screens/user/verify_screen.dart';
 import 'package:kronk/screens/user/welcome_screen.dart';
 import 'package:kronk/screens/vocabulary/vocabularies_screen.dart';
 import 'package:kronk/utility/dimensions.dart';
+import 'package:kronk/utility/extensions.dart';
+import 'package:kronk/widgets/custom_drawer.dart';
 import 'package:kronk/widgets/image_cropper_screen.dart';
 import 'package:kronk/widgets/navbar.dart';
+
+final activeScreenNameProvider = StateProvider<String>((ref) => 'default');
+
+@immutable
+class ScaffoldConfig {
+  final bool resizeToAvoidBottomInset;
+  final PreferredSizeWidget? appBar;
+  final Widget? floatingActionButton;
+
+  const ScaffoldConfig({this.resizeToAvoidBottomInset = false, this.appBar, this.floatingActionButton});
+}
+
+final scaffoldConfigProvider = StateProvider<ScaffoldConfig>((ref) => const ScaffoldConfig());
+
+// router.dart - The Final ScreenConfigurator
+
+class ScreenConfigurator extends ConsumerWidget {
+  final bool resizeToAvoidBottomInset;
+  final PreferredSizeWidget? appBar;
+  final Widget? floatingActionButton;
+  final Widget body;
+
+  const ScreenConfigurator({super.key, this.resizeToAvoidBottomInset = false, this.appBar, this.floatingActionButton, required this.body});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final GoRouterState state = GoRouterState.of(context);
+    final String myScreenName = state.uri.pathSegments.isNotEmpty ? state.uri.pathSegments.first : 'default';
+
+    ref.listen<String>(activeScreenNameProvider, (previous, next) {
+      if (next == myScreenName) {
+        final newConfig = ScaffoldConfig(resizeToAvoidBottomInset: resizeToAvoidBottomInset, appBar: appBar, floatingActionButton: floatingActionButton);
+        ref.read(scaffoldConfigProvider.notifier).state = newConfig;
+      }
+    });
+
+    final scaffoldConfig = ref.read(scaffoldConfigProvider);
+    final isActive = ref.read(activeScreenNameProvider) == myScreenName;
+
+    if (isActive && scaffoldConfig.appBar != appBar) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        ref.read(scaffoldConfigProvider.notifier).state = ScaffoldConfig(
+          resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+          appBar: appBar,
+          floatingActionButton: floatingActionButton,
+        );
+      });
+    }
+
+    return body;
+  }
+}
 
 class MainShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -34,12 +89,46 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const List<String> fullscreenRoutes = ['/feeds/feed', '/chats/chat', '/profile/preview', '/profile/edit', '/image_cropper', '/entertainment'];
-    final String location = GoRouterState.of(context).uri.toString();
-    final bool isNavbarHidden = fullscreenRoutes.any((route) => location.startsWith(route));
+    final GoRouterState state = GoRouterState.of(context);
+    final String matchedLocation = state.matchedLocation;
+    final String screenName = state.uri.pathSegments.isNotEmpty ? state.uri.pathSegments.first : 'default';
+    const fullscreenRoutes = ['/feeds/:feedId', '/chats/:chatId', '/image_cropper/:type', '/profile/edit'];
+    final isNavbarHidden = fullscreenRoutes.contains(matchedLocation);
 
+    final scaffoldConfig = ref.watch(scaffoldConfigProvider);
+    final screenStyle = ref.watch(screenStyleStateProvider(screenName));
+    final isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
+
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      if (ref.read(activeScreenNameProvider) != screenName) {
+        ref.read(activeScreenNameProvider.notifier).state = screenName;
+      }
+    });
     return Scaffold(
-      body: navigationShell,
+      drawer: const CustomDrawer(),
+      appBar: scaffoldConfig.appBar,
+      body: Stack(
+        children: [
+          if (isFloating)
+            Positioned(
+              left: 0,
+              top: MediaQuery.of(context).padding.top - 52.dp,
+              right: 0,
+              bottom: 0,
+              child: Opacity(
+                opacity: 0.4,
+                child: Image.asset(
+                  screenStyle.backgroundImage,
+                  fit: BoxFit.cover,
+                  cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
+                  cacheWidth: Sizes.screenWidth.cacheSize(context),
+                ),
+              ),
+            ),
+          navigationShell,
+        ],
+      ),
+      floatingActionButton: scaffoldConfig.floatingActionButton,
       bottomNavigationBar: AnimatedContainer(duration: const Duration(milliseconds: 200), height: isNavbarHidden ? 0 : Sizes.navbarHeight, child: const Navbar()),
     );
   }
@@ -125,8 +214,11 @@ class AppRouter {
                 pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const FeedsScreen()),
                 routes: [
                   GoRoute(
-                    path: 'feed',
-                    pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const FeedScreen()),
+                    path: ':feedId',
+                    pageBuilder: (context, state) => SlidePageTransition(
+                      key: state.pageKey,
+                      child: FeedScreen(feedId: state.extra as String),
+                    ),
                   ),
                 ],
               ),
@@ -149,9 +241,12 @@ class AppRouter {
                 pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const ChatsScreen()),
                 routes: [
                   GoRoute(
-                    path: 'chat',
+                    path: ':chatId',
                     name: 'chat',
-                    pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const ChatScreen()),
+                    pageBuilder: (context, state) => SlidePageTransition(
+                      key: state.pageKey,
+                      child: ChatScreen(chatId: state.extra as String),
+                    ),
                   ),
                 ],
               ),
@@ -227,8 +322,8 @@ class AppRouter {
                 pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const ProfileScreen()),
                 routes: [
                   GoRoute(
-                    path: 'preview',
-                    name: 'previewProfile',
+                    path: ':targetUserId',
+                    name: 'preview',
                     pageBuilder: (context, state) => SlidePageTransition(
                       key: state.pageKey,
                       child: ProfileScreen(targetUserId: state.extra as String?),
@@ -236,7 +331,7 @@ class AppRouter {
                   ),
                   GoRoute(
                     path: 'edit',
-                    name: 'editProfile',
+                    name: 'edit',
                     pageBuilder: (context, state) => SlidePageTransition(key: state.pageKey, child: const EditProfileScreen()),
                   ),
                 ],

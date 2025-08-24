@@ -8,8 +8,9 @@ import 'package:kronk/firebase_options.dart';
 import 'package:kronk/main.dart';
 import 'package:kronk/models/navbar_adapter.dart';
 import 'package:kronk/models/navbar_model.dart';
-import 'package:kronk/models/user_adapter.dart';
+import 'package:kronk/models/note_model_adapter.dart';
 import 'package:kronk/models/user_model.dart';
+import 'package:kronk/models/user_model_adapter.dart';
 import 'package:kronk/utility/my_logger.dart';
 import 'package:kronk/utility/storage.dart';
 // import 'package:path_provider/path_provider.dart';
@@ -36,11 +37,13 @@ Future<String> setup() async {
     rethrow;
   }
 
-  Hive.registerAdapter(UserAdapter(), override: true);
-  Hive.registerAdapter(NavbarAdapter(), override: true);
+  Hive.registerAdapter(UserModelAdapter(), override: true);
+  Hive.registerAdapter(NavbarModelAdapter(), override: true);
+  Hive.registerAdapter(ChecklistModelAdapter());
+  Hive.registerAdapter(NoteModelAdapter());
 
-  await Hive.openBox<UserModel>('userBox');
   await Hive.openBox<NavbarModel>('navbarBox');
+  await Hive.openBox<UserModel>('userBox');
   await Hive.openBox('settingsBox');
 
   try {

@@ -6,5 +6,10 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!-- Universal Link sample -->
+	<key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:kronk.uz</string>
+    </array>
 </dict>
 </plist>

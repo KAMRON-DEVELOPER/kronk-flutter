@@ -2,6 +2,8 @@ enum ProfileStateEnum { view, edit }
 
 enum TimelineType { following, discover }
 
+enum NoteScope { personal, shared }
+
 enum LayoutStyle { edgeToEdge, floating }
 
 enum EngagementType { feeds, reposts, quotes, likes, views, bookmarks }

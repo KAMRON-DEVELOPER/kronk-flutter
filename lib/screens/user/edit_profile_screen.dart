@@ -38,7 +38,7 @@ class EditProfileScreen extends ConsumerWidget {
     final double avatarHeight = 96.dp;
     final double avatarRadius = avatarHeight / 2;
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: BaseAppBar(
         appBarHeight: 48.dp,
         bottomHeight: 0,
         bottomGap: 1,

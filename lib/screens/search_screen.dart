@@ -13,9 +13,9 @@ import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/screens/chat/chat_screen.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
-import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
 import 'package:kronk/utility/my_logger.dart';
+import 'package:kronk/utility/router.dart';
 import 'package:kronk/utility/screen_style_state_dialog.dart';
 import 'package:kronk/utility/storage.dart';
 import 'package:kronk/widgets/custom_appbar.dart';
@@ -62,9 +62,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with AutomaticKeepA
     final theme = ref.watch(themeProvider);
     final int tabIndex = ref.watch(searchScreenTabIndexProvider);
 
-    return Scaffold(
+    return ScreenConfigurator(
       resizeToAvoidBottomInset: false,
-      appBar: CustomAppBar(
+      appBar: BaseAppBar(
         appBarHeight: 48.dp,
         bottomHeight: 40.dp,
         bottomGap: 4.dp,
@@ -91,8 +91,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with AutomaticKeepA
           padding: EdgeInsets.all(2.dp),
           decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(12.dp)),
           child: TabBar(
-            dividerHeight: 0,
             controller: _tabController,
+            dividerHeight: 0,
             indicatorSize: TabBarIndicatorSize.tab,
             indicator: BoxDecoration(color: theme.primaryBackground, borderRadius: BorderRadius.circular(10.dp)),
             labelStyle: GoogleFonts.quicksand(fontSize: 18.dp, color: theme.primaryText, fontWeight: FontWeight.w600),
@@ -153,99 +153,76 @@ class _FeedSearchWidgetState extends ConsumerState<FeedSearchWidget> {
 
     final BorderRadius borderRadius = BorderRadius.circular(isFloating ? screenStyle.borderRadius : 0);
     final BorderSide borderSide = BorderSide(color: theme.secondaryBackground, width: 0.5);
-    return Stack(
-      children: [
-        /// Static background images
-        if (isFloating)
-          Positioned(
-            left: 0,
-            top: MediaQuery.of(context).padding.top - 52.dp,
-            right: 0,
-            bottom: 0,
-            child: Opacity(
-              opacity: 0.4,
-              child: Image.asset(
-                screenStyle.backgroundImage,
-                fit: BoxFit.cover,
-                cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
-                cacheWidth: Sizes.screenWidth.cacheSize(context),
+    return CustomScrollView(
+      slivers: [
+        /// Search field
+        SliverToBoxAdapter(
+          child: Container(
+            height: 40.dp,
+            margin: EdgeInsets.only(left: 12.dp, top: 12.dp, right: 12.dp),
+            child: TextField(
+              controller: _searchController,
+              style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16, fontWeight: FontWeight.w500),
+              cursorColor: theme.primaryText,
+              cursorWidth: 1,
+              cursorRadius: const Radius.circular(0.5),
+              cursorHeight: 20,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
+                border: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                disabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                enabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                hint: Text(
+                  'Search',
+                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 10.dp, horizontal: 20.dp),
+                prefixIcon: Icon(Icons.search_rounded, size: 24.dp, color: theme.secondaryText),
+                suffixIcon: _searchController.text.isNotEmpty == true
+                    ? IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.invalidate(feedSearchNotifierProvider);
+                        },
+                        icon: Icon(Icons.clear_rounded, size: 20.dp, color: theme.secondaryText),
+                      )
+                    : null,
               ),
+              onChanged: (String searchQuery) => ref.read(feedSearchNotifierProvider.notifier).fetchSearchQueryResult(searchQuery: searchQuery),
             ),
           ),
+        ),
 
-        /// Content
-        CustomScrollView(
-          slivers: [
-            /// Search field
-            SliverToBoxAdapter(
-              child: Container(
-                height: 40.dp,
-                margin: EdgeInsets.only(left: 12.dp, top: 12.dp, right: 12.dp),
-                child: TextField(
-                  controller: _searchController,
-                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16, fontWeight: FontWeight.w500),
-                  cursorColor: theme.primaryText,
-                  cursorWidth: 1,
-                  cursorRadius: const Radius.circular(0.5),
-                  cursorHeight: 20,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
-                    border: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    disabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    enabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    hint: Text(
-                      'Search',
-                      style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 10.dp, horizontal: 20.dp),
-                    prefixIcon: Icon(Icons.search_rounded, size: 24.dp, color: theme.secondaryText),
-                    suffixIcon: _searchController.text.isNotEmpty == true
-                        ? IconButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.invalidate(feedSearchNotifierProvider);
-                            },
-                            icon: Icon(Icons.clear_rounded, size: 20.dp, color: theme.secondaryText),
-                          )
-                        : null,
+        /// Feeds list
+        asyncFeeds.when(
+          data: (List<FeedModel> feeds) {
+            if (feeds.isEmpty) {
+              return SliverFillRemaining(
+                child: Center(
+                  child: Text(
+                    'No results found. 🔍',
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 32.dp, fontWeight: FontWeight.w600),
                   ),
-                  onChanged: (String searchQuery) => ref.read(feedSearchNotifierProvider.notifier).fetchSearchQueryResult(searchQuery: searchQuery),
                 ),
-              ),
-            ),
+              );
+            }
 
-            /// Feeds list
-            asyncFeeds.when(
-              data: (List<FeedModel> feeds) {
-                if (feeds.isEmpty) {
-                  return SliverFillRemaining(
-                    child: Center(
-                      child: Text(
-                        'No results found. 🔍',
-                        style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 32.dp, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  );
-                }
-
-                if (feeds.isNotEmpty) {
-                  return SliverFillRemaining(
-                    child: ListView.separated(
-                      padding: EdgeInsets.all(12.dp),
-                      itemCount: feeds.length,
-                      separatorBuilder: (context, index) => SizedBox(height: 12.dp),
-                      itemBuilder: (context, index) => FeedCard(initialFeed: feeds.elementAt(index), isRefreshing: false),
-                    ),
-                  );
-                }
-                return const SliverFillRemaining(child: SizedBox.shrink());
-              },
-              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (e, st) => SliverFillRemaining(child: Center(child: Text('Error: $e'))),
-            ),
-          ],
+            if (feeds.isNotEmpty) {
+              return SliverFillRemaining(
+                child: ListView.separated(
+                  padding: EdgeInsets.all(12.dp),
+                  itemCount: feeds.length,
+                  separatorBuilder: (context, index) => SizedBox(height: 12.dp),
+                  itemBuilder: (context, index) => FeedCard(initialFeed: feeds.elementAt(index), isRefreshing: false),
+                ),
+              );
+            }
+            return const SliverFillRemaining(child: SizedBox.shrink());
+          },
+          loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
+          error: (e, st) => SliverFillRemaining(child: Center(child: Text('Error: $e'))),
         ),
       ],
     );
@@ -295,105 +272,82 @@ class _UserSearchWidgetState extends ConsumerState<UserSearchWidget> {
 
     final BorderRadius borderRadius = BorderRadius.circular(isFloating ? screenStyle.borderRadius : 0);
     final BorderSide borderSide = BorderSide(color: theme.secondaryBackground, width: 0.5);
-    return Stack(
-      children: [
-        /// Static background images
-        if (isFloating)
-          Positioned(
-            left: 0,
-            top: MediaQuery.of(context).padding.top - 52.dp,
-            right: 0,
-            bottom: 0,
-            child: Opacity(
-              opacity: 0.4,
-              child: Image.asset(
-                screenStyle.backgroundImage,
-                fit: BoxFit.cover,
-                cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
-                cacheWidth: Sizes.screenWidth.cacheSize(context),
+    return CustomScrollView(
+      slivers: [
+        /// Search field
+        SliverToBoxAdapter(
+          child: Container(
+            height: 40.dp,
+            margin: EdgeInsets.only(left: 12.dp, top: 12.dp, right: 12.dp),
+            child: TextField(
+              controller: _searchController,
+              style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16, fontWeight: FontWeight.w500),
+              cursorColor: theme.primaryText,
+              cursorWidth: 1,
+              cursorRadius: const Radius.circular(0.5),
+              cursorHeight: 20,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
+                border: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                disabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                enabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
+                hint: Text(
+                  'Search',
+                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 10.dp, horizontal: 20.dp),
+                prefixIcon: Icon(Icons.search_rounded, size: 24.dp, color: theme.secondaryText),
+                suffixIcon: _searchController.text.isNotEmpty == true
+                    ? IconButton(
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.invalidate(userSearchNotifierProvider);
+                        },
+                        icon: Icon(Icons.clear_rounded, size: 24.dp, color: theme.secondaryText),
+                      )
+                    : null,
               ),
+              onChanged: (String searchQuery) => ref.read(userSearchNotifierProvider.notifier).fetchSearchQueryResult(searchQuery: searchQuery),
             ),
           ),
+        ),
 
-        /// Content
-        CustomScrollView(
-          slivers: [
-            /// Search field
-            SliverToBoxAdapter(
-              child: Container(
-                height: 40.dp,
-                margin: EdgeInsets.only(left: 12.dp, top: 12.dp, right: 12.dp),
-                child: TextField(
-                  controller: _searchController,
-                  style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16, fontWeight: FontWeight.w500),
-                  cursorColor: theme.primaryText,
-                  cursorWidth: 1,
-                  cursorRadius: const Radius.circular(0.5),
-                  cursorHeight: 20,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: theme.primaryBackground.withValues(alpha: screenStyle.opacity),
-                    border: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    focusedBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    disabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    enabledBorder: OutlineInputBorder(borderRadius: borderRadius, borderSide: borderSide),
-                    hint: Text(
-                      'Search',
-                      style: GoogleFonts.quicksand(color: theme.secondaryText, fontSize: 16.dp, fontWeight: FontWeight.w600),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 10.dp, horizontal: 20.dp),
-                    prefixIcon: Icon(Icons.search_rounded, size: 24.dp, color: theme.secondaryText),
-                    suffixIcon: _searchController.text.isNotEmpty == true
-                        ? IconButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.invalidate(userSearchNotifierProvider);
-                            },
-                            icon: Icon(Icons.clear_rounded, size: 24.dp, color: theme.secondaryText),
-                          )
-                        : null,
+        /// Profile lists
+        asyncUsers.when(
+          data: (List<UserModel> userSearchResultList) {
+            if (userSearchResultList.isEmpty) {
+              return SliverFillRemaining(
+                child: Center(
+                  child: Text(
+                    'No results found. 🔍',
+                    style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 32.dp, fontWeight: FontWeight.w600),
                   ),
-                  onChanged: (String searchQuery) => ref.read(userSearchNotifierProvider.notifier).fetchSearchQueryResult(searchQuery: searchQuery),
                 ),
-              ),
-            ),
+              );
+            }
 
-            /// Profile lists
-            asyncUsers.when(
-              data: (List<UserModel> userSearchResultList) {
-                if (userSearchResultList.isEmpty) {
-                  return SliverFillRemaining(
-                    child: Center(
-                      child: Text(
-                        'No results found. 🔍',
-                        style: GoogleFonts.quicksand(color: theme.primaryText, fontSize: 32.dp, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  );
-                }
-
-                if (userSearchResultList.isNotEmpty) {
-                  return SliverFillRemaining(
-                    child: ListView.separated(
-                      padding: EdgeInsets.all(12.dp),
-                      itemCount: userSearchResultList.length,
-                      separatorBuilder: (context, index) => SizedBox(height: 12.dp),
-                      itemBuilder: (context, index) {
-                        final user = userSearchResultList.elementAt(index);
-                        return ProfileSearchCard(user: user);
-                      },
-                    ),
-                  );
-                }
-                return const SliverFillRemaining(child: SizedBox.shrink());
-              },
-              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (e, st) {
-                myLogger.e('Error: $e, StackTrace: $st');
-                return SliverFillRemaining(child: Center(child: Text('Error: $e, StackTrace: $st')));
-              },
-            ),
-          ],
+            if (userSearchResultList.isNotEmpty) {
+              return SliverFillRemaining(
+                child: ListView.separated(
+                  padding: EdgeInsets.all(12.dp),
+                  itemCount: userSearchResultList.length,
+                  separatorBuilder: (context, index) => SizedBox(height: 12.dp),
+                  itemBuilder: (context, index) {
+                    final user = userSearchResultList.elementAt(index);
+                    return ProfileSearchCard(user: user);
+                  },
+                ),
+              );
+            }
+            return const SliverFillRemaining(child: SizedBox.shrink());
+          },
+          loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
+          error: (e, st) {
+            myLogger.e('Error: $e, StackTrace: $st');
+            return SliverFillRemaining(child: Center(child: Text('Error: $e, StackTrace: $st')));
+          },
         ),
       ],
     );
@@ -420,7 +374,7 @@ class ProfileSearchCard extends ConsumerWidget {
           context.go('/profile');
         } else {
           myLogger.d('it is Adhambek...');
-          context.pushNamed('previewProfile', extra: user.id);
+          context.pushNamed('preview', extra: user.id);
         }
       },
       child: Card(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kronk/models/navbar_model.dart';
@@ -33,7 +34,7 @@ class _NavbarState extends ConsumerState<Navbar> {
   @override
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider);
-    final navbarState = ref.watch(navbarStateProvider);
+    final navbarState = ref.watch(navbarStateProvider.select((value) => value.copyWith(items: value.items.where((e) => e.isEnabled).toList())));
 
     return Container(
       height: navbarState.navbarHeight,
@@ -53,7 +54,7 @@ class _NavbarState extends ConsumerState<Navbar> {
               // Check if pointer is near the left edge and scroll left
               if (event.localPosition.dx < scrollThreshold && scrollPosition.pixels > 0) {
                 scrollController.animateTo(
-                  (scrollPosition.pixels - 20).clamp(0.0, scrollPosition.maxScrollExtent),
+                  (scrollPosition.pixels - scrollThreshold).clamp(0.0, scrollPosition.maxScrollExtent),
                   duration: const Duration(milliseconds: 100),
                   curve: Curves.linear,
                 );
@@ -61,7 +62,7 @@ class _NavbarState extends ConsumerState<Navbar> {
               // Check if pointer is near the right edge and scroll right
               else if (event.localPosition.dx > Sizes.screenWidth - scrollThreshold && scrollPosition.pixels < scrollPosition.maxScrollExtent) {
                 scrollController.animateTo(
-                  (scrollPosition.pixels + 20).clamp(0.0, scrollPosition.maxScrollExtent),
+                  (scrollPosition.pixels + scrollThreshold).clamp(0.0, scrollPosition.maxScrollExtent),
                   duration: const Duration(milliseconds: 100),
                   curve: Curves.linear,
                 );
@@ -70,7 +71,6 @@ class _NavbarState extends ConsumerState<Navbar> {
             child: navbarState.items.isEmpty
                 ? const SizedBox.shrink()
                 : SingleChildScrollView(
-                    key: const PageStorageKey('navbarScroll'),
                     controller: scrollController,
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
@@ -99,7 +99,7 @@ class DragTargetsLayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final navbarState = ref.watch(navbarStateProvider);
+    final navbarState = ref.watch(navbarStateProvider.select((value) => value.copyWith(items: value.items.where((e) => e.isEnabled).toList())));
     final notifier = ref.read(navbarStateProvider.notifier);
 
     return Row(
@@ -132,11 +132,7 @@ class DragTargetsLayer extends ConsumerWidget {
 
             if (newActiveIndex != -1) notifier.update(navbarState: stateAfter.copyWith(activeIndex: newActiveIndex));
           },
-          builder: (context, candidateData, rejectedData) => Container(
-            width: navbarState.cellWidth,
-            height: navbarState.navbarHeight,
-            decoration: BoxDecoration(border: Border.all(width: 0.1, color: Colors.redAccent)),
-          ),
+          builder: (context, candidateData, rejectedData) => SizedBox(width: navbarState.cellWidth, height: navbarState.navbarHeight),
         );
       }),
     );
@@ -161,7 +157,7 @@ class AnimatedIconsLayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeProvider);
-    final navbarState = ref.watch(navbarStateProvider);
+    final navbarState = ref.watch(navbarStateProvider.select((value) => value.copyWith(items: value.items.where((e) => e.isEnabled).toList())));
     final notifier = ref.read(navbarStateProvider.notifier);
 
     return Stack(
@@ -171,55 +167,20 @@ class AnimatedIconsLayer extends ConsumerWidget {
         final leftOffset = getLeftOffset(index: index, dragIndex: navbarState.dragIndex, hoverIndex: navbarState.hoverIndex, cellWidth: navbarState.cellWidth);
 
         return AnimatedPositioned(
-          key: ValueKey(item),
+          key: ValueKey(item.route),
           top: 0,
           left: leftOffset,
           width: navbarState.cellWidth,
           height: navbarState.navbarHeight,
           curve: Curves.easeOut,
           duration: const Duration(milliseconds: 300),
-          child: LongPressDraggable<int>(
+          child: LongPressDraggable(
             data: index,
             dragAnchorStrategy: childDragAnchorStrategy,
-            onDragStarted: () => notifier.update(navbarState: navbarState.copyWith(dragIndex: index)),
-            // onDragEnd: (details) async {
-            //   final currentState = ref.read(navbarStateProvider);
-            //   final enabledItemsBefore = currentState.items.where((item) => item.isEnabled).toList();
-            //   final activeItem = enabledItemsBefore.elementAt(currentState.activeIndex);
-            //   final dragIndex = currentState.dragIndex;
-            //
-            //   if (details.wasAccepted) {
-            //     notifier.update(navbarState: currentState.copyWith(dragIndex: null, hoverIndex: null));
-            //     return;
-            //   }
-            //
-            //   final fingerOffset = details.offset;
-            //   final feedbackRect = Rect.fromCenter(center: fingerOffset, width: currentState.cellWidth, height: currentState.navbarHeight);
-            //   final barRect = Rect.fromLTWH(0, Sizes.screenHeight - currentState.navbarHeight, Sizes.screenWidth, currentState.navbarHeight);
-            //   final isOverlapping = barRect.overlaps(feedbackRect);
-            //
-            //   if (dragIndex != null && !isOverlapping) {
-            //     await notifier.toggleNavbarItem(index: dragIndex, appliedToEnabled: true);
-            //
-            //     final stateAfterToggle = ref.read(navbarStateProvider);
-            //     final enabledItemsAfter = stateAfterToggle.items.where((item) => item.isEnabled).toList();
-            //     final newActiveIndex = enabledItemsAfter.indexOf(activeItem);
-            //
-            //     if (newActiveIndex != -1) {
-            //       notifier.update(navbarState: stateAfterToggle.copyWith(activeIndex: newActiveIndex));
-            //     } else if (enabledItemsAfter.isNotEmpty) {
-            //       notifier.update(navbarState: stateAfterToggle.copyWith(activeIndex: 0));
-            //       if (!context.mounted) return;
-            //       context.go(enabledItemsAfter.first.route);
-            //     } else {
-            //       if (!context.mounted) return;
-            //       context.go('/welcome');
-            //     }
-            //   }
-            //
-            //   final latestState = ref.read(navbarStateProvider);
-            //   notifier.update(navbarState: latestState.copyWith(dragIndex: null, hoverIndex: null));
-            // },
+            onDragStarted: () async {
+              await HapticFeedback.mediumImpact();
+              notifier.update(navbarState: navbarState.copyWith(dragIndex: index));
+            },
             onDragEnd: (details) async {
               final currentState = ref.read(navbarStateProvider);
               final enabledItemsBefore = currentState.items.where((item) => item.isEnabled).toList();
@@ -237,7 +198,6 @@ class AnimatedIconsLayer extends ConsumerWidget {
                 return;
               }
 
-              // Compute overlap with navbar rect (to decide toggle/remove)
               final fingerOffset = details.offset;
               final feedbackRect = Rect.fromCenter(center: fingerOffset, width: currentState.cellWidth, height: currentState.navbarHeight);
               final barRect = Rect.fromLTWH(0, Sizes.screenHeight - currentState.navbarHeight, Sizes.screenWidth, currentState.navbarHeight);
@@ -271,10 +231,9 @@ class AnimatedIconsLayer extends ConsumerWidget {
             childWhenDragging: const SizedBox.shrink(),
             feedback: Material(
               color: Colors.transparent,
-              child: Container(
+              child: SizedBox(
                 width: navbarState.cellWidth,
                 height: navbarState.navbarHeight,
-                color: Colors.greenAccent.withValues(alpha: 0.25),
                 child: Icon(
                   item.getIconData(isActive: isActive),
                   color: isActive ? theme.primaryText : theme.secondaryText,

@@ -16,64 +16,81 @@ import 'package:kronk/riverpod/general/theme_provider.dart';
 import 'package:kronk/screens/chat/chat_screen.dart';
 import 'package:kronk/utility/classes.dart';
 import 'package:kronk/utility/constants.dart';
-import 'package:kronk/utility/dimensions.dart';
 import 'package:kronk/utility/extensions.dart';
-import 'package:kronk/utility/screen_style_state_dialog.dart';
-import 'package:kronk/widgets/custom_drawer.dart';
-import 'package:kronk/widgets/main_appbar.dart';
+import 'package:kronk/utility/router.dart';
+import 'package:kronk/widgets/custom_appbar.dart';
 
 /// ChatsScreen
-class ChatsScreen extends ConsumerWidget {
+class ChatsScreen extends ConsumerStatefulWidget {
   const ChatsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ScreenStyleState screenStyle = ref.watch(screenStyleStateProvider('chats'));
-    final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
+  ConsumerState<ChatsScreen> createState() => _ChatsScreenState();
+}
 
+class _ChatsScreenState extends ConsumerState<ChatsScreen> with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen(chatsWebsocketProvider, (previous, next) => next.whenData((data) => ref.read(chatsProvider.notifier).handleWebsocketEvents(data: data)));
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: MainAppBar(titleText: 'Chats', tabText1: 'chats', tabText2: 'groups', onTap: () => showScreenStyleStateDialog(context, 'chats')),
-        body: Stack(
-          children: [
-            /// Static background images
-            if (isFloating)
-              Positioned(
-                left: 0,
-                top: MediaQuery.of(context).padding.top - 52.dp,
-                right: 0,
-                bottom: 0,
-                child: Opacity(
-                  opacity: 0.4,
-                  child: Image.asset(
-                    screenStyle.backgroundImage,
-                    fit: BoxFit.cover,
-                    cacheHeight: (Sizes.screenHeight - MediaQuery.of(context).padding.top - 52.dp).cacheSize(context),
-                    cacheWidth: Sizes.screenWidth.cacheSize(context),
-                  ),
-                ),
-              ),
-
-            /// TabBarView
-            const TabBarView(children: [ChatsTabBar(), GroupsTabBar()]),
-          ],
-        ),
-        drawer: const CustomDrawer(),
-      ),
+    return ScreenConfigurator(
+      resizeToAvoidBottomInset: false,
+      appBar: CustomAppBar(screenName: 'chats', tabController: _tabController, titleText: 'Chats', tabText1: 'chats', tabText2: 'groups'),
+      body: TabBarView(controller: _tabController, children: [const ChatsTabBar(), const GroupsTabBar()]),
     );
   }
 }
 
 /// ChatsTabBar
-class ChatsTabBar extends ConsumerWidget {
+class ChatsTabBar extends ConsumerStatefulWidget {
   const ChatsTabBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatsTabBar> createState() => _ChatsTabBarState();
+}
+
+class _ChatsTabBarState extends ConsumerState<ChatsTabBar> with AutomaticKeepAliveClientMixin {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
+  void scrollListener() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent) {
+      ref.read(chatsProvider.notifier).loadMore();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
     final theme = ref.watch(themeProvider);
     final AsyncValue<List<ChatModel>> chats = ref.watch(chatsProvider);
     return RefreshIndicator(

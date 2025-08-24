@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kronk/constants/kronk_icon.dart';
 
-// @HiveType(typeId: 0, adapterName: 'NavbarAdapter')
+// @HiveType(typeId: 0, adapterName: 'NavbarModelAdapter')
 class NavbarModel extends HiveObject {
   @HiveField(0)
   String route;

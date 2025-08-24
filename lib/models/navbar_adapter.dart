@@ -2,7 +2,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import 'navbar_model.dart';
 
-class NavbarAdapter extends TypeAdapter<NavbarModel> {
+class NavbarModelAdapter extends TypeAdapter<NavbarModel> {
   @override
   final int typeId = 0;
 

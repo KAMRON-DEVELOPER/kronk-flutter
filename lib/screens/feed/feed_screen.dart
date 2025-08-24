@@ -19,7 +19,8 @@ import 'package:kronk/widgets/custom_appbar.dart';
 import 'package:kronk/widgets/feed/feed_card.dart';
 
 class FeedScreen extends ConsumerWidget {
-  const FeedScreen({super.key});
+  final String feedId;
+  const FeedScreen({super.key, required this.feedId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,7 +30,7 @@ class FeedScreen extends ConsumerWidget {
     final bool isFloating = screenStyle.layoutStyle == LayoutStyle.floating;
 
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: BaseAppBar(
         appBarHeight: 48.dp,
         bottomHeight: 0,
         bottomGap: 1,
